@@ -1,0 +1,27 @@
+{
+	"main" : "index.html",
+	"name" : "mcopy-JK-edition",
+	"version" : "0.0.2",
+	"description" : "app for controlling a JK optical printer via an Arduino",
+	"license" : "MIT",
+	"author" : { 
+		"name" : "M McWilliams",
+		"email" : "mmcwilliams@massart.edu",
+		"url" : "http://flashfra.me"
+	},
+	"keywords": [ "demo", "node-webkit" ],
+  "window": {
+    "title": "mcopy",
+    "icon": "link.png",
+    "toolbar": true,
+    "frame": true,
+    "width": 800,
+    "height": 500,
+    "position": "mouse",
+    "min_width": 400,
+    "min_height": 200
+  },
+  "webkit": {
+    "plugin": true
+  }
+}

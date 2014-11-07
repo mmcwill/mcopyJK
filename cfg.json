@@ -1,0 +1,29 @@
+{
+	"ext_port" : 666,
+	"arduino" : {
+		"baud" : 57600,
+		"board" : "uno",
+		"serialDelay" : 10,
+		"cam" : {
+			"time" : 1000,
+			"delay" : 50,
+			"momentary" : 200
+		},
+		"proj" : {
+			"time" : 1000,
+			"delay" : 50,
+			"momentary" : 200
+		},
+		"cmd" : {
+			"debug" : "d",
+			"connect":  "i",
+			"camera" : "c",
+			"projector" : "p",
+			"black" : "b",
+			"cam_forward" : "e",
+			"cam_backward" : "f",
+			"proj_forward" : "g",
+			"proj_backward" : "h"
+		}
+	}
+}
