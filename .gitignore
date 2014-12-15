@@ -3,4 +3,7 @@ node_modules/*
 build/*
 ino/*
 mscript/*
+deploy/*
 install.sh
+config.codekit
+README.html

@@ -15,15 +15,19 @@ var fs = require('fs'),
 	gui = require('nw.gui'),
 	win = gui.Window.get(),
 	exec = require('child_process').exec,
+	humanizeDuration = require("humanize-duration"),
+	//moment = require('moment'),
 	//BSON = require('bson').BSONPure.BSON,
 	sp = require("serialport"),
 	SerialPort = sp.SerialPort,
 	express = {},
 	app = {},
+	io = {}
 	mcopy = {};
 
 mcopy.cfgFile = 'cfg.json';
 mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
+mcopy.editor = {};
 
 mcopy.arg = function (short, lng) {
 	if (process.argv.indexOf(short) !== -1 ||
@@ -39,13 +43,32 @@ mcopy.arg = function (short, lng) {
 mcopy.init = function () {
 	mcopy.log('Starting mcopy...');
 	mcopy.tests(function () {
+		process.on('uncaughtException', function (err) {
+    		alert(err);
+		});
+		mcopy.gui.menu();
+		mcopy.gui.overlay(true);
 		mcopy.gui.spinner(true);
 		mcopy.stateinit();
 		mcopy.arduino.init(function () {
 			mcopy.arduino.connect(mcopy.gui.init);
 		});
+
+	    mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+	      lineNumbers: true,
+	      mode: "text/html",
+	      matchBrackets: true
+	    });
+
+	    if (mcopy.arg('-m', '--mobile')) {
+	    	mcopy.mobile.init();
+	    }
+  
 	});
 };
+/******
+	State shared by ALL interfaces
+*******/
 mcopy.state = {
 	version : 'alpha', //use for file compatibility check
 	camera : {
@@ -184,6 +207,7 @@ mcopy.arduino.init = function (callback) {
 		if (matches.length === 0) {
 			mcopy.log('No devices found.');
 			mcopy.gui.spinner(false);
+			mcopy.gui.overlay(true);
 		} else if (matches.length > 0) {
 			mcopy.log('Found ' + matches[0]);
 			mcopy.arduino.path = matches[0];
@@ -235,13 +259,12 @@ mcopy.arduino.tests = function () {
 /******
 	Application-level commands
 *******/
-mcopy.cmd = {
-	delay: 20
-};
+mcopy.cmd = {};
 mcopy.cmd.cam_forward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.camera.pos++;
 		//gui action
+		mcopy.gui.updateState();
 		mcopy.log('Camera moved +1 frame to ' + mcopy.state.camera.pos);
 		if (callback) { callback(); }
 	};
@@ -249,20 +272,22 @@ mcopy.cmd.cam_forward = function (callback) {
 		mcopy.log('Advancing camera...');
 		mcopy.arduino.send(mcopy.cfg.arduino.cmd.cam_forward, function (ms) {
 			mcopy.state.camera.direction = true;
+			mcopy.gui.trad.updateDir({value:'cam_forward'});
 			setTimeout(function () {
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.camera, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		setTimeout(function () {
 			mcopy.arduino.send(mcopy.cfg.arduino.cmd.camera, res);
-		}, mcopy.cmd.delay);
+		}, mcopy.cfg.arduino.serialDelay);
 	}
 };
 mcopy.cmd.cam_backward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.camera.pos--;
 		//gui action
+		mcopy.gui.updateState();
 		mcopy.log('Camera moved -1 frame to ' + mcopy.state.camera.pos);
 		if (callback) { callback(); }
 	};
@@ -270,9 +295,10 @@ mcopy.cmd.cam_backward = function (callback) {
 		mcopy.log('Rewinding camera...');
 		mcopy.arduino.send(mcopy.cfg.arduino.cmd.cam_backward, function (ms) {
 			mcopy.state.camera.direction = false;
+			mcopy.gui.trad.updateDir({value:'cam_backward'});
 			setTimeout(function () {
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.camera, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		mcopy.arduino.send(mcopy.cfg.arduino.cmd.camera, res);
@@ -281,6 +307,7 @@ mcopy.cmd.cam_backward = function (callback) {
 mcopy.cmd.proj_forward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.projector.pos++;
+		mcopy.gui.updateState();
 		mcopy.log('Projector moved +1 frame to ' + mcopy.state.projector.pos);
 		//gui action
 		if (callback) { callback(); }
@@ -289,19 +316,21 @@ mcopy.cmd.proj_forward = function (callback) {
 		mcopy.log('Advancing projector...');
 		mcopy.arduino.send(mcopy.cfg.arduino.cmd.proj_forward, function (ms) {
 			mcopy.state.projector.direction = true;
+			mcopy.gui.trad.updateDir({value:'proj_forward'});
 			setTimeout(function () {
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.projector, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		setTimeout(function () {
 			mcopy.arduino.send(mcopy.cfg.arduino.cmd.projector, res);
-		}, mcopy.cmd.delay);
+		}, mcopy.cfg.arduino.serialDelay);
 	}
 };
 mcopy.cmd.proj_backward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.projector.pos--;
+		mcopy.gui.updateState();
 		//gui action
 		mcopy.log('Projector moved -1 frame to ' + mcopy.state.projector.pos);
 		if (callback) { callback(); }
@@ -309,19 +338,21 @@ mcopy.cmd.proj_backward = function (callback) {
 	if (mcopy.state.projector.direction) {
 		mcopy.arduino.send(mcopy.cfg.arduino.cmd.proj_backward, function (ms) {
 			mcopy.state.projector.direction = false;
+			mcopy.gui.trad.updateDir({value:'proj_backward'});
 			setTimeout(function () {
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.projector, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		setTimeout(function () {
 			mcopy.arduino.send(mcopy.cfg.arduino.cmd.projector, res);
-		}, mcopy.cmd.delay);
+		}, mcopy.cfg.arduino.serialDelay);
 	}
 };
 mcopy.cmd.black_forward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.camera.pos++;
+		mcopy.gui.updateState();
 		//gui action
 		mcopy.log('Camera moved +1 BLACK frame to ' + mcopy.state.camera.pos);
 		if (callback) { callback(); }
@@ -333,18 +364,19 @@ mcopy.cmd.black_forward = function (callback) {
 			setTimeout(function () {
 				//black
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.black, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		setTimeout(function () {
 			//black
 			mcopy.arduino.send(mcopy.cfg.arduino.cmd.black, res);
-		}, mcopy.cmd.delay);
+		}, mcopy.cfg.arduino.serialDelay);
 	}	
 };
 mcopy.cmd.black_backward = function (callback) {
 	var res = function (ms) {
 		mcopy.state.camera.pos--;
+		mcopy.gui.updateState();
 		//gui action
 		mcopy.log('Camera moved -1 BLACK frame to ' + mcopy.state.camera.pos);
 		if (callback) { callback(); }
@@ -356,7 +388,7 @@ mcopy.cmd.black_backward = function (callback) {
 			setTimeout(function () {
 				//black
 				mcopy.arduino.send(mcopy.cfg.arduino.cmd.black, res);
-			}, mcopy.cmd.delay);
+			}, mcopy.cfg.arduino.serialDelay);
 		});
 	} else {
 		//black
@@ -375,8 +407,9 @@ mcopy.seq.run = function () {
 			setTimeout(function () {
 				mcopy.seq.i++;
 				mcopy.seq.run();
-			}, 100);
+			}, mcopy.cfg.arduino.sequenceDelay);
 		};
+	if (mcopy.seq.stop()) { return false; }
 	if (mcopy.seq.i <= mcopy.state.sequence.arr.length && cmd !== undefined) {
 		mcopy.log('Sequence step ' + mcopy.seq.i + ' command ' + cmd + '...');
 		if (cmd === 'CF'){
@@ -396,10 +429,50 @@ mcopy.seq.run = function () {
 		mcopy.log('Sequence completed!');
 	}
 };
+mcopy.seq.stopState = false;
+mcopy.seq.stop = function (state) {
+	if (typeof state === 'undefined') {
+		return mcopy.seq.stopState;
+	} else {
+		mcopy.seq.stopState = state;
+	}
+};
 mcopy.seq.init = function (start) {
 	if (!start) { start = 0; }
+	mcopy.seq.stop(false);
 	mcopy.seq.i = start;
 	mcopy.seq.run();
+};
+mcopy.seq.timing = function () {
+	var ms = 0,
+		cmd = '';
+	for (var i = 0; i < mcopy.state.sequence.arr.length; i++) {
+		cmd = mcopy.state.sequence.arr[i];
+		if (cmd === 'CF' || cmd === 'CB'){
+			ms += mcopy.cfg.arduino.cam.time;
+			ms += mcopy.cfg.arduino.cam.delay;
+			ms += mcopy.cfg.arduino.serialDelay;
+		}
+		if (cmd === 'PF' || cmd === 'PB'){
+			ms += mcopy.cfg.arduino.proj.time;
+			ms += mcopy.cfg.arduino.proj.delay;
+			ms += mcopy.cfg.arduino.serialDelay;
+		}
+		if (cmd === 'BF' || cmd === 'BB'){
+			ms += mcopy.cfg.arduino.black.before;
+			ms += mcopy.cfg.arduino.black.after;
+			ms += mcopy.cfg.arduino.cam.time;
+			ms += mcopy.cfg.arduino.cam.delay;
+			ms += mcopy.cfg.arduino.serialDelay;
+		}
+		ms += mcopy.cfg.arduino.sequenceDelay;
+	}
+	if (ms < 2000) {
+		$('#stats .timing span').text(ms + 'ms');
+	} else {
+		$('#stats .timing span').text(humanizeDuration(ms));
+	}
+	return ms;
 };
 
 /******
@@ -436,6 +509,7 @@ mcopy.gui.spinner = function (state) {
 };
 mcopy.gui.init = function () {
 	//
+	mcopy.gui.overlay(false);
 	mcopy.gui.spinner(false);
 	mcopy.gui.events();
 
@@ -443,7 +517,49 @@ mcopy.gui.init = function () {
 	mcopy.gui.grid.layout();
 	//setTimeout(mcopy.arduino.tests, 2000);
 };
+mcopy.gui.updateState = function () {
+	var cpos = mcopy.state.camera.pos,
+		ppos = mcopy.state.projector.pos;
+	$('#trad_cam_count').val(cpos).change();
+	$('#trad_proj_count').val(ppos).change();
 
+	$('#seq_cam_count').val(cpos).change();
+	$('#seq_proj_count').val(ppos).change();
+
+	$('#goto_cam').val(cpos).change();
+	$('#goto_proj').val(ppos).change();
+};
+mcopy.gui.changeView = function (t) {
+	$('.nav').removeClass('current');
+	$('.view').hide();
+	if (t.innerHTML === 'Traditional') {
+		$('#traditional').show();
+	} else if (t.innerHTML === 'Sequencer') {
+		$('#sequencer').show();
+	} else if (t.innerHTML === 'Script') {
+		$('#mscript').show();
+	}
+	$(t).addClass('current');
+};
+mcopy.gui.overlay = function (state) {
+	if (state) {
+		$('#overlay').show();
+	} else {
+		$('#overlay').hide();
+	}
+};
+mcopy.gui.menu = function () {
+	var menu = new gui.Menu({type:"menubar"});
+	if (process.platform === "darwin") {
+		menu.createMacBuiltin("mcopy");
+	}
+	gui.Window.get().menu = menu;
+	console.dir(gui.Window.get().menu.item)
+};
+
+/******
+	Sequencer grid
+*******/
 mcopy.gui.grid = {};
 mcopy.gui.grid.layout = function () {
 	var check = '';
@@ -465,6 +581,7 @@ mcopy.gui.grid.layout = function () {
 
 		mcopy.gui.grid.state(i);
 	}
+	mcopy.seq.timing();
 };
 mcopy.gui.grid.state = function (i) {
 	if (mcopy.state.sequence.arr[i] !== undefined) {
@@ -509,6 +626,11 @@ mcopy.gui.grid.click = function (t) {
 		mcopy.state.sequence.arr[i] = undefined;
 		delete mcopy.state.sequence.arr[i];
 	}
+	mcopy.seq.timing();
+};
+mcopy.gui.grid.clear = function () {
+	//
+	//
 };
 mcopy.gui.events = function () {
 	$(document.body).on('click', 'input[type=checkbox]', function () {
@@ -520,6 +642,145 @@ mcopy.gui.checklist = function () {
 	//bind hide event if all are checked off
 	//allow gui layout
 };
+
+/******
+	Traditional view
+*******/
+mcopy.gui.trad = {};
+mcopy.gui.trad.counterFormat = function (t, normal, prevent) {
+	var len = 6,
+		raw = t.value,
+		str = t.value + '';
+	if (raw < 0) {
+		t.value = '-' + Array(len - (str.length - 1)).join('0') + str.replace('-', '');
+	} else {
+		if (str.length < len) {
+			t.value = Array(len - str.length).join('0') + str;
+		} else if (str.length >= len) {
+			str = parseInt(str) + '';
+			t.value = Array(len - str.length).join('0') + str;
+		}
+	}
+	if (typeof normal !== 'undefined' && parseInt(raw) !== normal) {
+		$(t).addClass('changed');
+	} else {
+		$(t).removeClass('changed');
+	}
+	if (typeof prevent === 'undefined') { prevent = false; }
+	if (!prevent) {
+		mcopy.gui.trad.shootGoto(t);
+	}
+};
+mcopy.gui.trad.shootGoto = function (t) {
+	var elem = $(t),
+		id = elem.attr('id').split('_'),
+		val = 0,
+		comp = 0,
+		other = {};
+	if (id[1] === 'cam') {
+		comp = mcopy.state.camera.pos;
+	} else if (id[1] === 'proj') {
+		comp = mcopy.state.projector.pos;
+	}
+	if (id[0] === 'shoot') {
+		other = $('#goto_' + id[1]);
+		val = parseInt(elem.val()) + comp;
+		other.val(val);
+		mcopy.gui.trad.counterFormat(other[0], comp, true);
+		//other.trigger('change');
+	} else if (id[0] === 'goto'){
+		other = $('#shoot_' + id[1]);
+		val = parseInt(elem.val()) - comp;
+		other.val(val);
+		mcopy.gui.trad.counterFormat(other[0], undefined, true);
+	} else {
+		console.log('You screwed up the markup.');
+	}
+};
+mcopy.gui.trad.updateCam = function (t) {
+	var val = t.value,
+		change;
+	if (parseInt(val) === mcopy.state.camera.pos) { return false; }
+	change = confirm('Are you sure you want to set camera counter to ' + val + '?');
+	if (change) {
+		mcopy.state.camera.pos = parseInt(val);
+		mcopy.gui.updateState();
+	} else {
+		t.value = mcopy.state.camera.pos;
+		mcopy.gui.trad.counterFormat(t);
+	}
+};
+mcopy.gui.trad.updateProj = function (t) {
+	var val = t.value,
+		change;
+	if (parseInt(val) === mcopy.state.projector.pos) { return false; }
+	change = confirm('Are you sure you want to set projector counter to ' + val + '?');
+	if (change) {
+		mcopy.state.projector.pos = parseInt(val);
+		mcopy.gui.updateState();
+	} else {
+		t.value = mcopy.projector.projector.pos;
+		mcopy.gui.trad.counterFormat(t);
+	}
+};
+mcopy.gui.trad.updateDir = function (t) {
+	if (t.value === 'cam_forward') {
+		mcopy.state.camera.direction = true;
+		$('#trad_cam h1').removeClass('backward');
+		if (!confirm('Set belts for CAMERA FORWARD or cancel.')) {
+			mcopy.state.camera.direction = false;
+			$('#trad_cam h1').addClass('backward');
+			$('input[value=cam_backward').prop('checked', true);
+		} else {
+			$('input[value=cam_forward').prop('checked', true);
+		}
+	} else if (t.value === 'cam_backward') {
+		mcopy.state.camera.direction = false;
+		$('#trad_cam h1').addClass('backward');
+		if (!confirm('Set belts for CAMERA REVERSE or cancel.')) {
+			mcopy.state.camera.direction = true;
+			$('#trad_cam h1').removeClass('backward');
+			$('input[value=cam_forward').prop('checked', true);
+		} else {
+			$('input[value=cam_backward').prop('checked', true);
+		}
+	} else if (t.value === 'proj_forward') {
+		mcopy.state.projector.direction = true;
+		$('#trad_proj h1').removeClass('backward');
+		if (!confirm('Set belts for PROJECTOR FORWARD or cancel')) {
+			mcopy.state.projector.direction = false;
+			$('#trad_proj h1').addClass('backward');
+			$('input[value=proj_backward').prop('checked', true);
+		} else {
+			$('input[value=proj_forward').prop('checked', true);
+		}
+	} else if (t.value === 'proj_backward') {
+		mcopy.state.projector.direction = false;
+		$('#trad_proj h1').addClass('backward');
+		if (!confirm('Set belts for PROJECTOR REVERSE or cancel')) {
+			mcopy.state.projector.direction = true;
+			$('#trad_proj h1').removeClass('backward');
+			$('input[value=proj_forward').prop('checked', true);
+		} else {
+			$('input[value=proj_backward').prop('checked', true);
+		}
+	}
+};
+mcopy.gui.trad.keypress = function (t, e) {
+    if (e.which === 13) {
+        alert('You pressed enter!');
+    }
+};
+
+/******
+	Traditional view's sequence object
+*******/
+mcopy.gui.trad.seq = [];
+mcopy.gui.trad.seq_next = function () {
+
+	alert('Perform next action in sequence');
+};
+mcopy.gui.trad.seq_refresh = function () {};
 
 //mscript view
 mcopy.gui.mscript = {};
@@ -570,10 +831,12 @@ mcopy.file.mscript = function (input, callback) {
 /******
 	Mobile App Control
 *******/
-mcopy.mobile = function () {
+mcopy.mobile = {};
+mcopy.mobile.init = function () {
+	mcopy.log('Starting mobile app...')
 	express = require('express');
 	app = express();
-
+	io = require('socket.io')();
 
 	app.get('/', function (req, res) {
 		res.send('hi matt');
@@ -582,7 +845,6 @@ mcopy.mobile = function () {
 	app.get('/cmd/:cmd', function (req, res) {
 		console.log(req.param('cmd'));
 	});
-
 
 	app.port(mcopy.cfg.ext_port);
 };

@@ -3,16 +3,21 @@
 	"arduino" : {
 		"baud" : 57600,
 		"board" : "uno",
-		"serialDelay" : 10,
+		"serialDelay" : 20,
+		"sequenceDelay" : 100,
 		"cam" : {
-			"time" : 1000,
+			"time" : 750,
 			"delay" : 50,
-			"momentary" : 200
+			"momentary" : 300
 		},
 		"proj" : {
-			"time" : 1000,
+			"time" : 1300,
 			"delay" : 50,
-			"momentary" : 200
+			"momentary" : 300
+		},
+		"black" : {
+			"before" : 250,
+			"after" : 250
 		},
 		"cmd" : {
 			"debug" : "d",

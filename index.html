@@ -1,64 +1,134 @@
 <html>
 <head>
 	<link rel="stylesheet" href="css/mcopy.css" />
+	<link rel="stylesheet" href="css/codemirror.css" />
 </head>
 <body>
 	<div id="spinner"></div>
 	<pre id="source">Test source</pre>
-	<div id="views"></div>
+	<div id="views">
+		<div class="nav current" onclick="mcopy.gui.changeView(this);">Traditional</div>
+		<div class="nav" onclick="mcopy.gui.changeView(this);">Sequencer</div>
+		<div class="nav" onclick="mcopy.gui.changeView(this);">Script</div>
+	</div>
 	<div id="traditional" class="view">
 		<div id="trad_cam" class="section">
 			<div class="container">
-				<input type="number" id="trad_cam_count" class="count" value="0000"/>
+				<input type="number" id="trad_cam_count" class="count" value="00000" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.camera.pos);" onblur="mcopy.gui.trad.updateCam(this);" onkeypress="mcopy.gui.trad.keypress(this, event);" />
 				<h1>CAMERA</h1>
-				<button>SINGLE FRAME <span>FORWARD</span></button>
-				<button>SINGLE FRAME <span>BACKWARD</span></button>
-				<div>
-					<span>FRAME</span>
-					<input type="number" />
-				</div>
-				<div>
-					<span>END</span>
-					<input type="number" />
-				</div>
-				<div>
+				<div class="set">
 					<form>
-					<div>FORWARD <input type="radio" name="cam_direction" /></div>
-					<div>REVERSE <input type="radio" name="cam_direction" /></div>
+						<div><span>FORWARD </span><input type="radio" name="cam_direction" onchange="mcopy.gui.trad.updateDir(this);" value="cam_forward" checked="true"/></div>
+						<div><span>REVERSE </span><input type="radio" name="cam_direction" onchange="mcopy.gui.trad.updateDir(this);" value="cam_backward" /></div>
+					</form>
+				</div>
+				<button onclick="mcopy.cmd.cam_forward();">SINGLE FRAME <span>FORWARD</span></button>
+				<button onclick="mcopy.cmd.cam_backward();">SINGLE FRAME <span>BACKWARD</span></button>
+				<div class="set first">
+					<span>SHOOT # FRAMES</span>
+					<input type="number" value="00000" min="0" id="shoot_cam" onchange="mcopy.gui.trad.counterFormat(this);" />
+				</div>
+				<div class="set">
+					<span>GOTO FRAME</span>
+					<input type="number" value="00000" id="goto_cam" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.camera.pos);" />
+				</div>
+				<div class="set capping first">
+					<label>CAPPING SHUTTER</label>
+					<form>
+						<div><span>OPEN </span><input type="radio" name="cam_black" checked="true"/><input type="radio" name="cam_black" /><span>CLOSED </span></div>
 					</form>
 				</div>
 			</div>
 		</div>
 		<div id="trad_loop" class="section">
 			<div class="container">
-				<input type="number" class="count" value="0000"/>
-				<h1>LOOP</h1>
+				<h1>SEQUENCE</h1>
+				<div class="set loop">
+					<span>LOOP</span>
+					<input type="number" class="count" value="00000" min="0" onchange="mcopy.gui.trad.counterFormat(this);" />
+				</div>
+				<!--
+				<div class="onoff">
+					<form>
+						<div><label>SEQUENCE </label> <span>ON </span><input type="radio" name="sequence"/><input type="radio" name="sequence" checked="true"/><span>OFF </span></div>
+					</form>
+				</div>
+				-->
+				<button onclick="mcopy.gui.trad.seq_next();">SINGLE FRAME <span>SEQUENCE</span></button>
+				<div class="ratio">
+					<label>RATIO</label>
+					<span>CAMERA</span><input type="number" value="1" min="0" /> : <input type="number" value="1" min="0" /><span>PROJECTOR</span>
+				</div>
+				<div class="onoff alt_mode">
+					<form>
+						<div><label>ALT MODE </label> 
+							<span>ON </span>
+							<input type="radio" name="alt_mode"/>
+							<input type="radio" name="alt_mode" checked="true" />
+							<span>OFF </span>
+						</div>
+					</form>
+				</div>
+				<div class="onoff step_mode">
+					<form>
+						<div>
+							<label>STEP MODE </label> 
+							<span>ON </span>
+							<input type="radio" name="step_mode" />
+							<input type="radio" name="step_mode" checked="true" />
+							<span>OFF </span>
+						</div>
+					</form>
+				</div>
+				<div class="onoff skip_mode">
+					<form>
+						<div>
+							<label>SKIP MODE </label> 
+							<span>ON </span>
+							<input type="radio" name="skip_mode"/>
+							<input type="radio" name="skip_mode" checked="true" />
+							<span>OFF </span>
+						</div>
+					</form>
+				</div>
+				<button onclick="mcopy.gui.trad.seq_run();" id="run"><span>RUN</span></button>
+				<button onclick="mcopy.gui.trad.seq_stop();" id="stop"><span>STOP</span></button>
 			</div>
 		</div>
 		<div id="trad_proj" class="section">
 			<div class="container">
-				<input type="number" id="trad_cam_count" class="count" value="0000"></div>
+				<input type="number" id="trad_proj_count" class="count" value="00000"  onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.projector.pos);" onblur="mcopy.gui.trad.updateProj(this);" onkeypress="mcopy.gui.trad.keypress(this, event);"/>
 				<h1>PROJECTOR</h1>
-				<button>SINGLE FRAME <span>FORWARD</span></button>
-				<button>SINGLE FRAME <span>BACKWARD</span></button>
-				<div>
-					<span>FRAME</span>
-					<input type="number" />
-				</div>
-				<div>
-					<span>END</span>
-					<input type="number" />
-				</div>
-				<div>
+				<div class="set">
 					<form>
-						<div>FORWARD <input type="radio" name="cam_direction" /></div>
-						<div>REVERSE <input type="radio" name="cam_direction" /></div>
+						<div><span>FORWARD </span><input type="radio" name="proj_direction" onchange="mcopy.gui.trad.updateDir(this);" value="proj_forward" checked="true" /></div>
+						<div><span>REVERSE </span><input type="radio" name="proj_direction" onchange="mcopy.gui.trad.updateDir(this);" value="proj_backward" /></div>
 					</form>
+				</div>
+				<button onclick="mcopy.cmd.proj_forward();">SINGLE FRAME <span>FORWARD</span></button>
+				<button onclick="mcopy.cmd.proj_backward();">SINGLE FRAME <span>BACKWARD</span></button>
+				<div class="set first">
+					<span>MOVE # FRAMES</span>
+					<input type="number" value="00000" min="0" onchange="mcopy.gui.trad.counterFormat(this);" id="shoot_proj" />
+				</div>
+				<div class="set">
+					<span>GOTO FRAME</span>
+					<input type="number" value="00000" id="goto_proj" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.projector.pos);"/>
 				</div>
 			</div>
 		</div>
 	</div>
 	<div id="sequencer" class="view">
+		<div id="counters">
+			<div class="cam">
+				<label>CAMERA</label>
+				<input type="number" id="seq_cam_count" class="count" value="00000" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.camera.pos);" onblur="mcopy.gui.trad.updateCam(this);" />
+			</div>
+			<div class="proj">
+				<label>PROJECTOR</label>
+				<input type="number" id="seq_proj_count" class="count" value="00000" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.projector.pos);" onblur="mcopy.gui.trad.updateProj(this);" />
+			</div>
+		</div>
 		<div id="seq_scroll">
 			<div id="sequence">
 				<div id="cam_forward" class="row" y="0"></div>
@@ -74,10 +144,13 @@
 			<button id="stop">STOP</button>
 			<button>LOOP</button>
 		</div>
+		<div id="stats">
+			<div class="timing">Time to complete: <span>0 ms</span></div>
+		</div>
 	</div>
 	<div id="mscript" class="view">
 		<button onclick="mcopy.gui.mscript.close();">x</button>
-		<textarea></textarea>
+		<textarea id="editor"></textarea>
 	</div>
 	<div id="checklist">
 		<div> Camera/Projector Belts <input type="checkbox" /></div>
@@ -87,9 +160,10 @@
 		<div> F/stop at propper setting <input type="checkbox" /></div>
 		<div> Lamp voltage <input type="checkbox" /></div>
 	</div>
-	<div id="overlay">
+	<div id="overlay" onclick="mcopy.gui.overlay(false);">
 	</div>
 	<script src="js/jquery.js"></script>
+	<script src="js/codemirror.js"></script>
 	<script src="js/spin.js"></script>
 	<script src="js/mcopy.js"></script>
 </body>

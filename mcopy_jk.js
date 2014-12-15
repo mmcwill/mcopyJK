@@ -69,7 +69,7 @@ mcopy.init = function () {
 	mcopy.tests(mcopy.command); //checks for user commands, otherwise launches main app
 };
 mcopy.run = function () {
-	var cmd = '(cd ..; nodewebkit mcopy_jk)';
+	var cmd = '(cd ..; nodewebkit mcopyJK)';
 	exec(cmd, function () {});
 };
 

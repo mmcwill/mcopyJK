@@ -2,6 +2,16 @@ var fs = require('fs'),
 	input = process.argv[2],
 	json = process.argv.indexOf('-j');
 
+var mscript = {};
+
+mscript.arg = function (short, lng) {
+	if (process.argv.indexOf(short) !== -1 ||
+		process.argv.indexOf(lng) !== -1) {
+		return true;
+	}
+	return false;
+};
+
 var cmd = [
 	'CF',
 	'PF',
@@ -10,6 +20,27 @@ var cmd = [
 	'PB',
 	'BB'
 ];
+
+var alts = {
+	'CF' : ['CAMERA FORWARD', 'CAM FORWARD'],
+	'PF' : ['PROJECTOR FORWARD', 'PROJ FORWARD'],
+	'BF': ['BLACK FORWARD'],
+	'CB' : ['CAMERA BACKWARD', 'CAM BACKWARD', 'CAMERA BACK', 'CAM BACK'],
+	'PB' : ['PROJECTOR FORWARD', 'PROJ FORWARD', 'PROJECTOR BACK', 'PROJ BACK'],
+	'BB' : ['BLACK BACKWARD', 'BLACK BACK']
+};
+var alts_unique = function () {
+	var ids = Object.keys(alts),
+		all = [];
+	for (var i = 0; i < ids.length; i++) {
+		if (all.indexOf(ids[i]) === -1) {
+			all.push(ids[i])
+		} else {
+			fail("Can't compile");
+		}
+	}
+};
+alts_unique();
 
 var state = {
 	cam : 0,
