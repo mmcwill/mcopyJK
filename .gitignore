@@ -7,3 +7,4 @@ deploy/*
 install.sh
 config.codekit
 README.html
+deploy/.build/uno/firmware.elf
