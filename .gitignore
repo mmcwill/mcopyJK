@@ -3,8 +3,11 @@ node_modules/*
 build/*
 ino/*
 mscript/*
+deploy
 deploy/*
 install.sh
 config.codekit
 README.html
+deploy/.build/uno/firmware.elf
+
 deploy/.build/uno/firmware.elf

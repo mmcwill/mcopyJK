@@ -1,15 +1,23 @@
 <html>
 <head>
-	<link rel="stylesheet" href="css/mcopy.css" />
 	<link rel="stylesheet" href="css/codemirror.css" />
+	<link rel="stylesheet" href="css/ionicons.min.css" />
+	<link rel="stylesheet" href="css/monokai.css" />
+	<link rel="stylesheet" href="css/mcopy.css" />
 </head>
 <body>
+	<div id="application">
+		<i id="close" class="ion-ios-close-empty" onclick="gui.App.quit();" title="Quit"></i>
+		<i id="mobile" class="ion-android-phone-portrait" onclick="mcopy.mobile.toggle();" title="Toggle mobile"></i>
+		<i id="settings" class="ion-ios-gear" onclick="win.showDevTools();" title="Dev tools"></i>
+		<i id="info" class="ion-ios-information-outline" title="About"></i>
+	</div>
 	<div id="spinner"></div>
 	<pre id="source">Test source</pre>
 	<div id="views">
-		<div class="nav current" onclick="mcopy.gui.changeView(this);">Traditional</div>
-		<div class="nav" onclick="mcopy.gui.changeView(this);">Sequencer</div>
-		<div class="nav" onclick="mcopy.gui.changeView(this);">Script</div>
+		<div class="nav current" id="nav_trad" onclick="mcopy.gui.changeView(this);">Traditional</div>
+		<div class="nav" id="nav_seq" onclick="mcopy.gui.changeView(this);">Sequencer</div>
+		<div class="nav" id="nav_script" onclick="mcopy.gui.changeView(this);">Script</div>
 	</div>
 	<div id="traditional" class="view">
 		<div id="trad_cam" class="section">
@@ -42,6 +50,7 @@
 		</div>
 		<div id="trad_loop" class="section">
 			<div class="container">
+				<input type="text" id="status" class="count" readonly value="Waiting..."/>
 				<h1>SEQUENCE</h1>
 				<div class="set loop">
 					<span>LOOP</span>
@@ -63,8 +72,8 @@
 					<form>
 						<div><label>ALT MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="alt_mode"/>
 							<input type="radio" name="alt_mode" checked="true" />
+							<input type="radio" name="alt_mode" />
 							<span>OFF </span>
 						</div>
 					</form>
@@ -140,17 +149,24 @@
 			</div>
 		</div>
 		<div id="actions">
-			<button id="run" onclick="mcopy.seq.init();">RUN</button>
-			<button id="stop">STOP</button>
-			<button>LOOP</button>
+			<button id="seq_run" onclick="mcopy.seq.init();">RUN</button>
+			<button id="seq_stop">STOP</button>
+			<button id="seq_clear">CLEAR</button>
+			<button id="seq_plus24">+ 24</button>
+		</div>
+		<div>
+			<div>LOOP</div>
+			<input type="number" min="0" id="seq_loop"
 		</div>
 		<div id="stats">
 			<div class="timing">Time to complete: <span>0 ms</span></div>
 		</div>
 	</div>
 	<div id="mscript" class="view">
-		<button onclick="mcopy.gui.mscript.close();">x</button>
-		<textarea id="editor"></textarea>
+		<!--<button onclick="mcopy.gui.mscript.close();">x</button>-->
+		<textarea id="editor">CF 1
+PF 1
+</textarea>
 	</div>
 	<div id="checklist">
 		<div> Camera/Projector Belts <input type="checkbox" /></div>

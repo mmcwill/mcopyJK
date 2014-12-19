@@ -16,10 +16,10 @@
   "window": {
     "title": "mcopy",
     "icon": "link.png",
-    "toolbar": true,
-    "frame": true,
+    "toolbar": false,
+    "frame": false,
     "width": 1080,
-    "height": 720,
+    "height": 800,
     "position": "mouse",
     "min_width": 1080,
     "min_height": 720

@@ -14,6 +14,7 @@ __/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____
 var fs = require('fs'),
 	gui = require('nw.gui'),
 	win = gui.Window.get(),
+	os = require('os'),
 	exec = require('child_process').exec,
 	humanizeDuration = require("humanize-duration"),
 	//moment = require('moment'),
@@ -22,12 +23,26 @@ var fs = require('fs'),
 	SerialPort = sp.SerialPort,
 	express = {},
 	app = {},
+	server = {},
 	io = {}
 	mcopy = {};
 
 mcopy.cfgFile = 'cfg.json';
 mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
 mcopy.editor = {};
+
+mcopy.exec = function (cmd, callback, error) {
+	var mb = {
+		maxBuffer: 100 * 1024
+	};
+	exec(cmd, mb, function (err, std) {
+		if (err) {
+			if (error) { error(err); }
+			return mcopy.log(err, 0);
+		}
+		if (callback) { callback(std); }
+	});
+};
 
 mcopy.arg = function (short, lng) {
 	if (process.argv.indexOf(short) !== -1 ||
@@ -42,24 +57,19 @@ mcopy.arg = function (short, lng) {
 *******/
 mcopy.init = function () {
 	mcopy.log('Starting mcopy...');
+	mcopy.bindings();
 	mcopy.tests(function () {
 		process.on('uncaughtException', function (err) {
-    		alert(err);
+    		console.dir(err);
 		});
 		mcopy.gui.menu();
+		mcopy.gui.mscript.init();
 		mcopy.gui.overlay(true);
 		mcopy.gui.spinner(true);
 		mcopy.stateinit();
 		mcopy.arduino.init(function () {
 			mcopy.arduino.connect(mcopy.gui.init);
 		});
-
-	    mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-	      lineNumbers: true,
-	      mode: "text/html",
-	      matchBrackets: true
-	    });
-
 	    if (mcopy.arg('-m', '--mobile')) {
 	    	mcopy.mobile.init();
 	    }
@@ -107,9 +117,14 @@ mcopy.stateinit = function () {
 	mcopy.local('state', mcopy.state);
 	//
 };
-mcopy.log = function (txt) {
-	$('#source').text(txt);
+mcopy.log = function (txt, status) {
+	$('#source').text('> ' + txt).attr('class', '');
 	console.log(txt);
+	if (status === 0) {
+		$('#source').addClass('error');
+	} else if (status === 1) {
+		$('#source').addClass('success');
+	}
 };
 mcopy.local = function (key, value) {
     var has = function () {
@@ -140,7 +155,7 @@ mcopy.local = function (key, value) {
 };
 mcopy.tests = function (callback) {
 	exec('ino -h', function (e1,std1) {
-		if (e1) { return mcopy.log('Problem with ino, check install'); }
+		if (e1) { return mcopy.log('Problem with ino, check install', 0); }
 		if (callback) { callback(); }
 	})
 };
@@ -170,7 +185,7 @@ mcopy.arduino.send = function (cmd, res) {
 		mcopy.arduino.queue[cmd] = res;
 		setTimeout(function () {
 			mcopy.arduino.serial.write(cmd, function (err, results) {
-				if (err) { mcopy.log(err); }
+				if (err) { mcopy.log(err, 0); }
 				mcopy.arduino.lock = false;
 				mcopy.arduino.timer = new Date().getTime();
 			});
@@ -226,7 +241,7 @@ mcopy.arduino.connect = function (callback) {
 	});
 	mcopy.arduino.serial.open(function (error) {
 		if ( error ) {
-			return mcopy.log('failed to open: '+ error);
+			return mcopy.log('failed to open: '+ error, 0);
 		} else {
 			mcopy.log('Opened connection with ' + mcopy.arduino.path);
 			mcopy.arduino.serial.on('data', function (data) {
@@ -409,9 +424,16 @@ mcopy.seq.run = function () {
 				mcopy.seq.run();
 			}, mcopy.cfg.arduino.sequenceDelay);
 		};
-	if (mcopy.seq.stop()) { return false; }
+	if (mcopy.seq.stop()) { 
+		$('.row input').removeClass('h');
+		mcopy.log('Sequence stepped');
+		return false; 
+	}
 	if (mcopy.seq.i <= mcopy.state.sequence.arr.length && cmd !== undefined) {
 		mcopy.log('Sequence step ' + mcopy.seq.i + ' command ' + cmd + '...');
+		//gui action
+		$('.row input').removeClass('h');
+		$('.row input[x=' + mcopy.seq.i + ']').addClass('h');
 		if (cmd === 'CF'){
 			mcopy.cmd.cam_forward(action);
 		} else if (cmd === 'CB') {
@@ -427,6 +449,8 @@ mcopy.seq.run = function () {
 		}
 	} else {
 		mcopy.log('Sequence completed!');
+		//clear gui
+		$('.row input').removeClass('h');
 	}
 };
 mcopy.seq.stopState = false;
@@ -530,6 +554,7 @@ mcopy.gui.updateState = function () {
 	$('#goto_proj').val(ppos).change();
 };
 mcopy.gui.changeView = function (t) {
+	var last = $('.nav.current')[0].id;
 	$('.nav').removeClass('current');
 	$('.view').hide();
 	if (t.innerHTML === 'Traditional') {
@@ -537,7 +562,7 @@ mcopy.gui.changeView = function (t) {
 	} else if (t.innerHTML === 'Sequencer') {
 		$('#sequencer').show();
 	} else if (t.innerHTML === 'Script') {
-		$('#mscript').show();
+		mcopy.gui.mscript.open(last);
 	}
 	$(t).addClass('current');
 };
@@ -784,18 +809,46 @@ mcopy.gui.trad.seq_refresh = function () {};
 
 //mscript view
 mcopy.gui.mscript = {};
-mcopy.gui.mscript.close = function () {
-	//
-	$('#mscript').hide();
+mcopy.gui.mscript.data = [];
+mcopy.gui.mscript.raw = '';
+mcopy.gui.mscript.init = function () {
+	mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+		lineNumbers: true,
+		mode: "text/html",
+		matchBrackets: true,
+		theme: 'monokai'
+	});
+	mcopy.editor.setSize(null, $(window).height());
+	mcopy.editor.on('change', function (e) {
+		var data = mcopy.editor.getValue(),
+			output = mcopy.gui.mscript.parse(data);
+	});
 };
-mcopy.gui.mscript.open = function () {
+mcopy.gui.mscript.close = function () {
+	$('#mscript').hide();
+	$('#' + mcopy.gui.mscript.last).click();
+};
+mcopy.gui.mscript.last = '';
+mcopy.gui.mscript.open = function (last) {
+	mcopy.gui.mscript.last = last;
+	mcopy.editor.setSize(null, $(window).height() - 20);
 	mcopy.gui.mscript.update();
 	$('#mscript').show();
-	$('#mscript textarea').focus();
+	mcopy.editor.refresh();
+	setTimeout(function () {
+		mcopy.editor.focus();
+	}, 300);
 };
 mcopy.gui.mscript.update = function () {
 	//ehhhhh
 	$('#mscript textarea').val(mcopy.state.sequence.arr.join('\n'));
+};
+mcopy.gui.mscript.parse = function (str) {
+	var cmd = 'node mscript.js "' + str + '\n"';
+	mcopy.gui.mscript.raw = str;
+	mcopy.exec(cmd, function (data) {
+		mcopy.gui.mscript.data = JSON.parse(data);
+	});
 };
 /******
 	File Handler
@@ -804,7 +857,7 @@ mcopy.file = {};
 mcopy.file.open = function (path) {
 	var data = JSON.parse(fs.readFileSync(path, 'utf8'));
 	if (data.version !== mcopy.state.version) {
-		mcopy.log('Cannot open file, wrong version');
+		mcopy.log('Cannot open file, wrong version', 0);
 	}
 	mcopy.state = data;
 	mcopy.state.program_start = +new Date();
@@ -821,10 +874,24 @@ mcopy.file.save = function (path) {
 mcopy.file.mscript = function (input, callback) {
 	var cmd = '(node mscript.js "' + input + '")';
 	exec(cmd, function (e, std) {
-		if (e) { return mcopy.log(e); }
+		if (e) { return mcopy.log(e, 0); }
 		var obj = JSON.parse(std);
 		console.dir(obj);
 		if (callback) { callback(obj); }
+	});
+};
+
+/******
+	Event Bindings
+*******/
+
+mcopy.bindings = function () {
+	$('.section').on('click', function () {
+		var label = 'current';
+		if (!$(this).hasClass(label)) {
+			$('.section').removeClass(label);
+			$(this).addClass(label);
+		}
 	});
 };
 
@@ -833,20 +900,41 @@ mcopy.file.mscript = function (input, callback) {
 *******/
 mcopy.mobile = {};
 mcopy.mobile.init = function () {
-	mcopy.log('Starting mobile app...')
+	mcopy.log('Starting mobile app...');
 	express = require('express');
 	app = express();
 	io = require('socket.io')();
+	ip = mcopy.mobile.getIp();
 
 	app.get('/', function (req, res) {
-		res.send('hi matt');
+		
 	});
 
-	app.get('/cmd/:cmd', function (req, res) {
-		console.log(req.param('cmd'));
-	});
+	server = app.listen(mcopy.cfg.ext_port);
+	mcopy.log('Mobile server started. Connect at http://' + ip + ':' + mcopy.cfg.ext_port);
+};
 
-	app.port(mcopy.cfg.ext_port);
+mcopy.mobile.stop = function () {
+	mcopy.log('Stopping mobile app...');
+	server.close();
+	mcopy.log('Stopped mobile app.');
+};
+
+mcopy.mobile.toggle = function () {
+	var elem = $('i#mobile'),
+		onClass = 'active';
+	if (elem.hasClass(onClass)) {
+		mcopy.mobile.stop();
+		elem.removeClass(onClass);
+	} else {
+		mcopy.mobile.init();
+		elem.addClass(onClass);
+	}
+};
+
+mcopy.mobile.getIp = function () {
+	console.log(os.networkInterfaces());
+	return '10.0.0.1';
 };
 
 $(document).ready(mcopy.init);
