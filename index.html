@@ -72,8 +72,8 @@
 					<form>
 						<div><label>ALT MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="alt_mode" checked="true" />
-							<input type="radio" name="alt_mode" />
+							<input type="radio" name="alt_mode" value="on" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="alt_mode" value="off" onchange="mcopy.gui.trad.changeMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>
@@ -83,8 +83,8 @@
 						<div>
 							<label>STEP MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="step_mode" />
-							<input type="radio" name="step_mode" checked="true" />
+							<input type="radio" name="step_mode" value="on" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="step_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>
@@ -94,8 +94,8 @@
 						<div>
 							<label>SKIP MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="skip_mode"/>
-							<input type="radio" name="skip_mode" checked="true" />
+							<input type="radio" name="skip_mode" value="on" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="skip_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>

@@ -43,7 +43,6 @@ mcopy.exec = function (cmd, callback, error) {
 		if (callback) { callback(std); }
 	});
 };
-
 mcopy.arg = function (short, lng) {
 	if (process.argv.indexOf(short) !== -1 ||
 		process.argv.indexOf(lng) !== -1) {
@@ -672,6 +671,7 @@ mcopy.gui.checklist = function () {
 	Traditional view
 *******/
 mcopy.gui.trad = {};
+mcopy.gui.trad.mode = 'alt_mode';
 mcopy.gui.trad.counterFormat = function (t, normal, prevent) {
 	var len = 6,
 		raw = t.value,
@@ -796,6 +796,72 @@ mcopy.gui.trad.keypress = function (t, e) {
         alert('You pressed enter!');
     }
 };
+mcopy.gui.trad.changeMode = function (t) {
+	var elem = $(t),
+		name = elem.attr('name'),
+		val = elem[0].value;
+
+	if (val === 'on') {
+		if (name === 'alt_mode') {
+			mcopy.gui.trad.name_val('step_mode', 'off').checked = true;
+			mcopy.gui.trad.name_val('skip_mode', 'off').checked = true;
+		} else if (name === 'step_mode') {
+			mcopy.gui.trad.name_val('alt_mode', 'off').checked = true;
+			mcopy.gui.trad.name_val('skip_mode', 'off').checked = true;
+		} else if (name === 'skip_mode') {
+			mcopy.gui.trad.name_val('alt_mode', 'off').checked = true;
+			mcopy.gui.trad.name_val('step_mode', 'off').checked = true;
+		}
+		mcopy.gui.trad.mode = name;
+	} else if (val === 'off') {
+		if (name === 'alt_mode') {
+			mcopy.gui.trad.name_val('step_mode', 'on').checked = true;
+			mcopy.gui.trad.mode = 'step_mode';
+		} else if (name === 'step_mode') {
+			mcopy.gui.trad.name_val('alt_mode', 'on').checked = true;
+			mcopy.gui.trad.mode = 'alt_mode';
+		} else if (name === 'skip_mode') {
+			mcopy.gui.trad.name_val('alt_mode', 'on').checked = true;
+			mcopy.gui.trad.mode = 'alt_mode';
+		}
+	}
+	//
+};
+
+mcopy.gui.trad.name_val = function (n, v) {
+	var radios = $('#trad_loop input[type=radio]'),
+		out;
+	radios.each(function () {
+		if ($(this).val() === v && $(this).attr('name') === n) {
+			out = $(this);
+		}
+	});
+	return out[0];
+};
+
+mcopy.gui.trad.step = function (cam, proj) {
+	var cam_str = '',
+		proj_str = '',
+		seq = [];
+	if (mcopy.state.camera.direction) {
+		cam_str = 'CF';
+	} else {
+		cam_str = 'CB';
+	}
+	if (mcopy.state.projector.direction) {
+		proj_str = 'PF';
+	} else {
+		proj_str = 'PB';
+	}
+	cam = Array.apply(null, new Array(cam)).map(Number.prototype.valueOf, cam_str);
+	proj = Array.apply(null, new Array(proj)).map(Number.prototype.valueOf, proj_str);
+	for (var i = 0; i < cam.length; i++) {
+		seq.push(cam[i]);
+		if (typeof proj[i] !== 'undefined') {
+			seq.push(proj[i]);
+		}
+	}
+};
 
 /******
 	Traditional view's sequence object
@@ -884,7 +950,6 @@ mcopy.file.mscript = function (input, callback) {
 /******
 	Event Bindings
 *******/
-
 mcopy.bindings = function () {
 	$('.section').on('click', function () {
 		var label = 'current';
@@ -907,19 +972,30 @@ mcopy.mobile.init = function () {
 	ip = mcopy.mobile.getIp();
 
 	app.get('/', function (req, res) {
-		
+		res.send(fs.readFileSync('tmpl/mcopy_index.html', 'utf8'));
+	});
+	app.get('/js/mcopy_mobile.js', function (req, res) {
+		res.send(fs.readFileSync('js/mcopy_mobile.js', 'utf8'));
+	});
+	app.get('/js/jquery.js', function (req, res) {
+		res.send(fs.readFileSync('js/jquery.js', 'utf8'));
 	});
 
 	server = app.listen(mcopy.cfg.ext_port);
+	io.listen(server);
+
+	io.sockets.on('connection', function (socket) {
+		mcopy.mobile.log('Device connected');
+		socket.emit('message', {'message': mcopy.state});
+	});
+
 	mcopy.log('Mobile server started. Connect at http://' + ip + ':' + mcopy.cfg.ext_port);
 };
-
 mcopy.mobile.stop = function () {
 	mcopy.log('Stopping mobile app...');
 	server.close();
 	mcopy.log('Stopped mobile app.');
 };
-
 mcopy.mobile.toggle = function () {
 	var elem = $('i#mobile'),
 		onClass = 'active';
@@ -931,10 +1007,13 @@ mcopy.mobile.toggle = function () {
 		elem.addClass(onClass);
 	}
 };
-
 mcopy.mobile.getIp = function () {
 	console.log(os.networkInterfaces());
 	return '10.0.0.1';
+};
+mcopy.mobile.log = function (str, status) {
+	str = 'mobile > ' + str;
+	mcopy.log(str, status);
 };
 
 $(document).ready(mcopy.init);
