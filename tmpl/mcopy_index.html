@@ -4,16 +4,44 @@
 	<meta name="format-detection" content="telephone=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="viewport" content="user-scalable=no, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<!--<link rel="apple-touch-icon"
 	sizes="144x144"
 	href="img/raticon.png">-->
 <style>
-	
+	*{
+		font-family: 'Helvetica Nueue', Arial, Helvetica, sans-serif;
+		font-weight: 200;
+	}
+	button{
+		display: block;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		background: transparent;
+		border: 2px solid #fff;
+		border-radius: 6px;
+		color: #fff;
+		width: 100%;
+		margin: 10px 0;
+	}
+	/*@forward: #00C4A0;
+	@backward: #AB1A25;*/
+	.backward{
+		border-color: #AB1A25;
+		color: #AB1A25;
+	}
+	.forward{
+		border-color: #00C4A0;
+		color: #00C4A0;
+	}
 </style>
 </head>
 <body>
 	<h1>mcopy</h1>
+	<button class="forward">CAM FORWARD</button>
+	<button class="forward">PROJ FORWARD</button>
+	<button class="backward">CAM BACKWARD</button>
+	<button class="backward">PROJ BACKWARD</button>
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="js/jquery.js"></script>
 	<script src="js/mcopy_mobile.js"></script>

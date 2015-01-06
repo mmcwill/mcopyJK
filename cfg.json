@@ -1,5 +1,6 @@
 {
-	"ext_port" : 666,
+	"version" : "0.0.7",
+	"ext_port" : 3002,
 	"arduino" : {
 		"baud" : 57600,
 		"board" : "uno",

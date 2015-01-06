@@ -17,14 +17,12 @@ var fs = require('fs'),
 	os = require('os'),
 	exec = require('child_process').exec,
 	humanizeDuration = require("humanize-duration"),
-	//moment = require('moment'),
-	//BSON = require('bson').BSONPure.BSON,
-	sp = require("serialport"),
+	moment = require('moment'),
+	uuid = require('node-uuid'),
+	sp = require('serialport'),
 	SerialPort = sp.SerialPort,
 	express = {},
 	app = {},
-	server = {},
-	io = {}
 	mcopy = {};
 
 mcopy.cfgFile = 'cfg.json';
@@ -58,8 +56,9 @@ mcopy.init = function () {
 	mcopy.log('Starting mcopy...');
 	mcopy.bindings();
 	mcopy.tests(function () {
-		process.on('uncaughtException', function (err) {
+		process.on('uncaughtException', function (err, a, b) {
     		console.dir(err);
+    		console.log(a);
 		});
 		mcopy.gui.menu();
 		mcopy.gui.mscript.init();
@@ -70,7 +69,8 @@ mcopy.init = function () {
 			mcopy.arduino.connect(mcopy.gui.init);
 		});
 	    if (mcopy.arg('-m', '--mobile')) {
-	    	mcopy.mobile.init();
+	    	//mcopy.mobile.init();
+	    	mcopy.mobile.toggle();
 	    }
   
 	});
@@ -578,7 +578,7 @@ mcopy.gui.menu = function () {
 		menu.createMacBuiltin("mcopy");
 	}
 	gui.Window.get().menu = menu;
-	console.dir(gui.Window.get().menu.item)
+	//console.dir(gui.Window.get().menu.item)
 };
 
 /******
@@ -966,12 +966,14 @@ mcopy.bindings = function () {
 mcopy.mobile = {};
 mcopy.mobile.init = function () {
 	mcopy.log('Starting mobile app...');
+
 	express = require('express');
-	app = express();
-	io = require('socket.io')();
+	app = express(),
 	ip = mcopy.mobile.getIp();
+	
 
 	app.get('/', function (req, res) {
+		mcopy.mobile.log('Device connected');
 		res.send(fs.readFileSync('tmpl/mcopy_index.html', 'utf8'));
 	});
 	app.get('/js/mcopy_mobile.js', function (req, res) {
@@ -980,20 +982,20 @@ mcopy.mobile.init = function () {
 	app.get('/js/jquery.js', function (req, res) {
 		res.send(fs.readFileSync('js/jquery.js', 'utf8'));
 	});
-
-	server = app.listen(mcopy.cfg.ext_port);
-	io.listen(server);
-
-	io.sockets.on('connection', function (socket) {
-		mcopy.mobile.log('Device connected');
-		socket.emit('message', {'message': mcopy.state});
+	app.get('/state', function (req, res) {
+		res.json({
+			camera: mcopy.state.camera,
+			projector: mcopy.state.projector
+		});
 	});
+	var http = require('http');
+	http.createServer(app).listen(mcopy.cfg.ext_port);
 
 	mcopy.log('Mobile server started. Connect at http://' + ip + ':' + mcopy.cfg.ext_port);
 };
 mcopy.mobile.stop = function () {
 	mcopy.log('Stopping mobile app...');
-	server.close();
+	app.close();
 	mcopy.log('Stopped mobile app.');
 };
 mcopy.mobile.toggle = function () {
@@ -1008,8 +1010,14 @@ mcopy.mobile.toggle = function () {
 	}
 };
 mcopy.mobile.getIp = function () {
-	console.log(os.networkInterfaces());
-	return '10.0.0.1';
+	var iface = os.networkInterfaces();
+	console.dir(iface);
+	if (typeof iface.en0 !== 'undefined') {
+		if (typeof iface.en0[1] !== 'undefined' && typeof iface.en0[1].address !== 'undefined') {
+			return iface.en0[1].address;
+		}
+	}
+	return '127.0.0.1';
 };
 mcopy.mobile.log = function (str, status) {
 	str = 'mobile > ' + str;
