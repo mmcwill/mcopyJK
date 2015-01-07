@@ -41,9 +41,9 @@ mcopy.exec = function (cmd, callback, error) {
 		if (callback) { callback(std); }
 	});
 };
-mcopy.arg = function (short, lng) {
-	if (process.argv.indexOf(short) !== -1 ||
-		process.argv.indexOf(lng) !== -1) {
+mcopy.arg = function (shrt, lng) {
+	if (gui.App.argv.indexOf(shrt) !== -1 ||
+		gui.App.argv.indexOf(lng) !== -1) {
 		return true;
 	}
 	return false;
@@ -153,6 +153,9 @@ mcopy.local = function (key, value) {
     }
 };
 mcopy.tests = function (callback) {
+	if (mcopy.arg('-m', '--mobile')) {
+		mcopy.log('Mobile mode enabled');
+	}
 	exec('ino -h', function (e1,std1) {
 		if (e1) { return mcopy.log('Problem with ino, check install', 0); }
 		if (callback) { callback(); }

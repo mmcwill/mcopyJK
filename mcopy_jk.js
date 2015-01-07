@@ -14,11 +14,6 @@ var fs = require('fs'),
 	exec = require('child_process').exec,
 	tmpl = require('handlebars'),
 	moment = require('moment');
-	//serial = require('serialport');
-	//moment
-	//nw
-	//
-
 
 /******
 	mcopy for JK edition
@@ -69,7 +64,14 @@ mcopy.init = function () {
 	mcopy.tests(mcopy.command); //checks for user commands, otherwise launches main app
 };
 mcopy.run = function () {
-	var cmd = '(cd ..; nodewebkit mcopyJK)';
+	var flags = '',
+		cmd = '(cd ..; nodewebkit mcopyJK';
+	if (process.argv.length > 3) {
+		for (var i = 3; i < process.argv.length; i++) {
+			cmd += ' ' + process.argv[i];
+		}
+	}
+	cmd += ')';
 	exec(cmd, function () {});
 };
 

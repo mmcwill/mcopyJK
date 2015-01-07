@@ -17,7 +17,7 @@
     "title": "mcopy",
     "icon": "link.png",
     "toolbar": false,
-    "frame": false,
+    "frame": true,
     "width": 1080,
     "height": 800,
     "position": "mouse",
