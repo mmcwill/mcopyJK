@@ -7,7 +7,7 @@ __/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____
 	 _\/\\\____\///_____\/\\\_\//\\\____________\//\\\______/\\\__\/\\\___________________\/\\\_______   
 	  _\/\\\_____________\/\\\__\///\\\___________\///\\\__/\\\____\/\\\___________________\/\\\_______  
 	   _\/\\\_____________\/\\\____\////\\\\\\\\\____\///\\\\\/_____\/\\\___________________\/\\\_______ 
-		_\///______________\///________\/////////_______\/////_______\///___by mmcwilliams___\///________
+		_\///______________\///________\/////////_______\/////_______\///___by m mcwilliams__\///________
 */
 
 //console.log(process.versions['node-webkit']);
@@ -106,7 +106,8 @@ mcopy.state = {
 			proj_backward : 'PB',
 			black_backward : 'BB'
 		}
-	}
+	},
+	mode : 'trad'
 };
 mcopy.stateinit = function () {
 	mcopy.log('Initializing state...');
@@ -560,10 +561,13 @@ mcopy.gui.changeView = function (t) {
 	$('.nav').removeClass('current');
 	$('.view').hide();
 	if (t.innerHTML === 'Traditional') {
+		mcopy.state.mode = 'trad';
 		$('#traditional').show();
 	} else if (t.innerHTML === 'Sequencer') {
+		mcopy.state.mode = 'seq';
 		$('#sequencer').show();
 	} else if (t.innerHTML === 'Script') {
+		mcopy.state.mode = 'script';
 		mcopy.gui.mscript.open(last);
 	}
 	$(t).addClass('current');
@@ -674,7 +678,8 @@ mcopy.gui.checklist = function () {
 	Traditional view
 *******/
 mcopy.gui.trad = {};
-mcopy.gui.trad.mode = 'alt_mode';
+mcopy.gui.trad.mode = 'seq';
+mcopy.gui.trad.seqMode = 'alt';
 mcopy.gui.trad.counterFormat = function (t, normal, prevent) {
 	var len = 6,
 		raw = t.value,
@@ -796,10 +801,17 @@ mcopy.gui.trad.updateDir = function (t) {
 };
 mcopy.gui.trad.keypress = function (t, e) {
     if (e.which === 13) {
-        alert('You pressed enter!');
+    	if (t.id === 'trad_cam_count') {
+			mcopy.gui.trad.updateCam(t);
+    	} else if (t.id === 'trad_proj_count') {
+    		mcopy.gui.trad.updateProj(t);
+    	} else {
+    		console.log('How in the heck?');
+    		console.stack();
+    	}
     }
 };
-mcopy.gui.trad.changeMode = function (t) {
+mcopy.gui.trad.changeSeqMode = function (t) {
 	var elem = $(t),
 		name = elem.attr('name'),
 		val = elem[0].value;
@@ -808,24 +820,26 @@ mcopy.gui.trad.changeMode = function (t) {
 		if (name === 'alt_mode') {
 			mcopy.gui.trad.name_val('step_mode', 'off').checked = true;
 			mcopy.gui.trad.name_val('skip_mode', 'off').checked = true;
+			mcopy.gui.trad.seqMode = 'alt';
 		} else if (name === 'step_mode') {
 			mcopy.gui.trad.name_val('alt_mode', 'off').checked = true;
 			mcopy.gui.trad.name_val('skip_mode', 'off').checked = true;
+			mcopy.gui.trad.seqMode = 'step';
 		} else if (name === 'skip_mode') {
 			mcopy.gui.trad.name_val('alt_mode', 'off').checked = true;
 			mcopy.gui.trad.name_val('step_mode', 'off').checked = true;
+			mcopy.gui.trad.seqMode = 'skip';
 		}
-		mcopy.gui.trad.mode = name;
 	} else if (val === 'off') {
 		if (name === 'alt_mode') {
 			mcopy.gui.trad.name_val('step_mode', 'on').checked = true;
-			mcopy.gui.trad.mode = 'step_mode';
+			mcopy.gui.trad.seqMode = 'step';
 		} else if (name === 'step_mode') {
 			mcopy.gui.trad.name_val('alt_mode', 'on').checked = true;
-			mcopy.gui.trad.mode = 'alt_mode';
+			mcopy.gui.trad.seqMode = 'alt';
 		} else if (name === 'skip_mode') {
 			mcopy.gui.trad.name_val('alt_mode', 'on').checked = true;
-			mcopy.gui.trad.mode = 'alt_mode';
+			mcopy.gui.trad.seqMode = 'alt';
 		}
 	}
 	//
@@ -841,8 +855,7 @@ mcopy.gui.trad.name_val = function (n, v) {
 	});
 	return out[0];
 };
-
-mcopy.gui.trad.step = function (cam, proj) {
+mcopy.gui.trad.alt = function (cam, proj) {
 	var cam_str = '',
 		proj_str = '',
 		seq = [];
@@ -856,20 +869,43 @@ mcopy.gui.trad.step = function (cam, proj) {
 	} else {
 		proj_str = 'PB';
 	}
-	cam = Array.apply(null, new Array(cam)).map(Number.prototype.valueOf, cam_str);
-	proj = Array.apply(null, new Array(proj)).map(Number.prototype.valueOf, proj_str);
-	for (var i = 0; i < cam.length; i++) {
+	cam = new Array(cam + 1).join(cam_str + ' ').split(' ');
+	cam.pop();
+	console.dir(cam);
+	proj = new Array(proj + 1).join(proj_str + ' ').split(' ');
+	proj.pop();
+	console.dir(proj);
+	for (var i = 0; i < cam.length; i++) { //proj and cam length should ===
 		seq.push(cam[i]);
 		if (typeof proj[i] !== 'undefined') {
 			seq.push(proj[i]);
 		}
 	}
+	console.dir(seq);
+	return seq;
 };
+
+//sets up current sequence on sequencer GUI
+mcopy.gui.trad.sendToSeq = function () {
+
+};
+
+mcopy.gui.trad.step = function () {};
+mcopy.gui.trad.skip = function () {}
 
 /******
 	Traditional view's sequence object
 *******/
-mcopy.gui.trad.seq = [];
+mcopy.gui.trad.seq = {
+	cam : [],
+	proj : [],
+	seq : {
+		alt : [],
+		step : [],
+		skip : []
+	}
+};
+
 mcopy.gui.trad.seq_next = function () {
 
 	alert('Perform next action in sequence');
@@ -950,23 +986,33 @@ mcopy.file.mscript = function (input, callback) {
 	});
 };
 
+mcopy.gui.trad.sections = function () {
+	var label = 'current';
+	if (!$(this).hasClass(label)) {
+		$('.section').removeClass(label);
+		$(this).addClass(label);
+		console.log($(this).attr('id'));
+		//if ()
+			//trad_cam mcopy.js:980
+			//trad_loop mcopy.js:980
+			//trad_proj 
+	}
+};
+
 /******
 	Event Bindings
 *******/
 mcopy.bindings = function () {
-	$('.section').on('click', function () {
-		var label = 'current';
-		if (!$(this).hasClass(label)) {
-			$('.section').removeClass(label);
-			$(this).addClass(label);
-		}
-	});
+	$('#traditional .section').on('mousedown', mcopy.gui.trad.sections);
 };
 
 /******
 	Mobile App Control
 *******/
 mcopy.mobile = {};
+mcopy.mobile.fail = function (res, msg) {
+	res.json(500, {success: false, err: msg});
+};
 mcopy.mobile.init = function () {
 	mcopy.log('Starting mobile app...');
 
@@ -984,6 +1030,13 @@ mcopy.mobile.init = function () {
 	});
 	app.get('/js/jquery.js', function (req, res) {
 		res.send(fs.readFileSync('js/jquery.js', 'utf8'));
+	});
+	app.get('/cmd/:cmd', function (req, res) {
+		if (typeof req.params.cmd !== 'undefined') {
+
+		} else {
+			mcopy.mobile.fail('No command provided');
+		}
 	});
 	app.get('/state', function (req, res) {
 		res.json({
@@ -1030,5 +1083,6 @@ mcopy.mobile.log = function (str, status) {
 $(document).ready(mcopy.init);
 
 setTimeout(function () {
-	mcopy.arduino.tests();
+	//mcopy.arduino.tests();
+	mcopy.gui.trad.alt(10, 15);
 }, 10000);

@@ -46,9 +46,11 @@
 						<div><span>OPEN </span><input type="radio" name="cam_black" checked="true"/><input type="radio" name="cam_black" /><span>CLOSED </span></div>
 					</form>
 				</div>
+				<button onclick="mcopy.gui.trad.seq_run();" id="run_cam" class="trad_btn"><span>RUN</span></button>
+				<button onclick="mcopy.gui.trad.seq_stop();" id="stop_cam" class="trad_btn"><span>STOP</span></button>
 			</div>
 		</div>
-		<div id="trad_loop" class="section">
+		<div id="trad_loop" class="section current">
 			<div class="container">
 				<input type="text" id="status" class="count" readonly value="Waiting..."/>
 				<h1>SEQUENCE</h1>
@@ -72,8 +74,8 @@
 					<form>
 						<div><label>ALT MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="alt_mode" value="on" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
-							<input type="radio" name="alt_mode" value="off" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="alt_mode" value="on" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
+							<input type="radio" name="alt_mode" value="off" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>
@@ -83,8 +85,8 @@
 						<div>
 							<label>STEP MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="step_mode" value="on" onchange="mcopy.gui.trad.changeMode(this);" />
-							<input type="radio" name="step_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="step_mode" value="on" onchange="mcopy.gui.trad.changeSeqMode(this);" />
+							<input type="radio" name="step_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>
@@ -94,14 +96,14 @@
 						<div>
 							<label>SKIP MODE </label> 
 							<span>ON </span>
-							<input type="radio" name="skip_mode" value="on" onchange="mcopy.gui.trad.changeMode(this);" />
-							<input type="radio" name="skip_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeMode(this);" />
+							<input type="radio" name="skip_mode" value="on" onchange="mcopy.gui.trad.changeSeqMode(this);" />
+							<input type="radio" name="skip_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<span>OFF </span>
 						</div>
 					</form>
 				</div>
-				<button onclick="mcopy.gui.trad.seq_run();" id="run"><span>RUN</span></button>
-				<button onclick="mcopy.gui.trad.seq_stop();" id="stop"><span>STOP</span></button>
+				<button onclick="mcopy.gui.trad.seq_run();" id="run_seq" class="trad_btn"><span>RUN</span></button>
+				<button onclick="mcopy.gui.trad.seq_stop();" id="stop_seq" class="trad_btn"><span>STOP</span></button>
 			</div>
 		</div>
 		<div id="trad_proj" class="section">
@@ -124,6 +126,8 @@
 					<span>GOTO FRAME</span>
 					<input type="number" value="00000" id="goto_proj" onchange="mcopy.gui.trad.counterFormat(this, mcopy.state.projector.pos);"/>
 				</div>
+				<button onclick="mcopy.gui.trad.seq_run();" id="run_proj" class="trad_btn"><span>RUN</span></button>
+				<button onclick="mcopy.gui.trad.seq_stop();" id="stop_proj" class="trad_btn"><span>STOP</span></button>
 			</div>
 		</div>
 	</div>

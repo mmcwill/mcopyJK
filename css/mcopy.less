@@ -148,19 +148,17 @@ i{
 		box-sizing: border-box;
 		.container{
 			position: relative;
+			padding: 10px 0;
+			border-radius: 5px;
 		}
-		&:before{
-			content: " ";
-			display: block;
-			position: absolute;
-			z-index: -1;
-			width: 31%;
-			min-height: 610px;
-			border-radius: 9px;
-			margin-top: -12px;
-		}
-		&.current:before{
+		&.current .container{
 			background: rgba(0, 0, 0, 0.1);
+			.trad_btn{
+				display: block;
+			}
+		}
+		.trad_btn{
+			display: none;
 		}
 	}
 	.count{
@@ -260,16 +258,18 @@ i{
 			margin-left: 3px;
 		}
 	}
-	#run{
-		//.button(@forward);
+	.trad_btn{
 		.button(@common);
 		span {font-size: 29px;}
-		margin-top: 35px;
 	}
-	#stop{
-		//.button(@backward);
-		.button(@common);
-		span {font-size: 29px;}
+	#run_seq{
+		margin-top: 59px;
+	}
+	#run_cam{
+		margin-top: 19px;
+	}
+	#run_proj{
+		margin-top: 105px;
 	}
 	button{
 		.button();
