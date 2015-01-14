@@ -989,15 +989,19 @@ mcopy.file.mscript = function (input, callback) {
 mcopy.gui.trad.sections = function () {
 	var label = 'current';
 	if (!$(this).hasClass(label)) {
+		var id = $(this).attr('id');
 		$('.section').removeClass(label);
 		$(this).addClass(label);
-		console.log($(this).attr('id'));
-		//if ()
-			//trad_cam mcopy.js:980
-			//trad_loop mcopy.js:980
-			//trad_proj 
+		if (id === 'trad_cam') {
+			mcopy.gui.trad.mode = 'cam';
+		} else if (id === 'trad_proj') {
+			mcopy.gui.trad.mode = 'proj';
+		} else if (id === 'trad_loop') {
+			mcopy.gui.trad.mode = 'seq';
+		}
 	}
 };
+mcopy.gui
 
 /******
 	Event Bindings
