@@ -1,0 +1,6 @@
+LOOP 4
+	LOOP 2
+	CF 1
+	PF 2
+	END
+END

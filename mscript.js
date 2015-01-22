@@ -1,18 +1,24 @@
 var fs = require('fs'),
-	input = process.argv[2],
-	json = process.argv.indexOf('-j');
+	input = process.argv[2];
 
 var mscript = {};
 
-mscript.arg = function (short, lng) {
-	if (process.argv.indexOf(short) !== -1 ||
+mscript.arg = function arg (shrt, lng) {
+	if (process.argv.indexOf(shrt) !== -1 ||
 		process.argv.indexOf(lng) !== -1) {
 		return true;
 	}
 	return false;
 };
-
-var cmd = [
+mscript.arg_pos = function arg_pos (shrt, lng) {
+	var pos = -1;
+	pos = process.argv.indexOf(shrt);
+	if (pos === -1) {
+		pos = process.argv.indexOf(lng);
+	}
+	return pos;
+};
+mscript.cmd = [
 	'CF',
 	'PF',
 	'BF',
@@ -20,8 +26,7 @@ var cmd = [
 	'PB',
 	'BB'
 ];
-
-var alts = {
+mscript.alts = {
 	'CF' : ['CAMERA FORWARD', 'CAM FORWARD'],
 	'PF' : ['PROJECTOR FORWARD', 'PROJ FORWARD'],
 	'BF': ['BLACK FORWARD'],
@@ -29,103 +34,104 @@ var alts = {
 	'PB' : ['PROJECTOR FORWARD', 'PROJ FORWARD', 'PROJECTOR BACK', 'PROJ BACK'],
 	'BB' : ['BLACK BACKWARD', 'BLACK BACK']
 };
-var alts_unique = function () {
-	var ids = Object.keys(alts),
+mscript.alts_unique = function alts_unique () {
+	var ids = Object.keys(mscript.alts),
 		all = [];
 	for (var i = 0; i < ids.length; i++) {
 		if (all.indexOf(ids[i]) === -1) {
-			all.push(ids[i])
+			all.push(ids[i]);
 		} else {
-			fail("Can't compile");
+			mscript.fail("Can't compile");
 		}
 	}
 };
-alts_unique();
-
-var state = {
-	cam : 0,
-	proj : 0,
-	loops : [],
-	rec : -1
+mscript.state = {};
+mscript.state_clear = function state_clear () {
+	mscript.state = {
+		cam : 0,
+		proj : 0,
+		loops : [],
+		rec : -1
+	};
 };
-
-var mcopy_script = function (text) {
+mscript.interpret = function interpret (text, callback) {
+	mscript.state_clear();
 	var lines = text.split('\n'),
 		two = '',
 		arr = [],
-		loop,
-		parent,
 		target = 0,
-		dist = 0,
+		dist = 0, //?
 		output = {};
 	for (var i = 0; i < lines.length; i++) {
 		lines[i] = lines[i].replace(/\t+/g, ""); //strip tabs
+		lines[i] = lines[i].trim(); //remove excess whitespace before and after command
 		two = lines[i].substring(0,2);
-		if (cmd.indexOf(two) !== -1) {
-			if (state.loops.length > 0) {
-				state.loops[state.rec].arr.push.apply(state.loops[state.rec].arr, str_to_arr(lines[i], two));
+		if (mscript.cmd.indexOf(two) !== -1) {
+			if (mscript.state.loops.length > 0) {
+				mscript.state.loops[mscript.state.rec].arr.push.apply(mscript.state.loops[mscript.state.rec].arr, mscript.str_to_arr(lines[i], two));
 			} else {
-				arr.push.apply(arr, str_to_arr(lines[i], two));
+				arr.push.apply(arr, mscript.str_to_arr(lines[i], two));
 			}
 		} else if (lines[i].substring(0, 4) === 'LOOP') {
-			//if (state.loop.on) { fail('Cannot loop within a loop... yet.'); }
-			//loopCmd = lines[i];
-			state.loops.push({
+			mscript.state.rec++;
+			mscript.state.loops[mscript.state.rec] = {
 				arr : [],
 				cam : 0,
 				proj : 0,
 				cmd : lines[i] + ''
-			});
-			state.rec++;
+			};
 		} else if (lines[i].substring(0, 3) === 'END') {
-			//state.loop.on = false;
-			for (var x = 0; x < loop_count(state.loops[state.rec].cmd); x++) {
-				if (state.rec === 0) {
-					arr.push.apply(arr, state.loops[state.rec].arr);
-				} else if (state.rec >= 1) {
-					state.loops[state.rec - 1].arr.push.apply(state.loops[state.rec - 1].arr, state.loops[state.rec].arr);
+			for (var x = 0; x < mscript.loop_count(mscript.state.loops[mscript.state.rec].cmd); x++) {
+				if (mscript.state.rec === 0) {
+					arr.push.apply(arr, mscript.state.loops[mscript.state.rec].arr);
+				} else if (mscript.state.rec >= 1) {
+					mscript.state.loops[mscript.state.rec - 1].arr.push.apply(mscript.state.loops[mscript.state.rec - 1].arr, mscript.state.loops[mscript.state.rec].arr);
 				}
 			}
-			state_update('END', loop_count(state.loops[state.rec].cmd));
-			delete state.loops[state.rec];
-			state.rec--;
+			mscript.state_update('END', mscript.loop_count(mscript.state.loops[mscript.state.rec].cmd));
+			delete mscript.state.loops[mscript.state.rec];
+			mscript.state.rec--;
 		} else if (lines[i].substring(0, 3) === 'CAM') { //directly go to that frame (black?)
-			if (state.loops.length > 0) { fail('Cannot go to absolute camera frame within a loop... yet.'); }
+			if (mscript.state.loops.length > 0) { 
+				mscript.fail('Cannot go to absolute camera frame within a loop... yet.'); 
+			}
 			target = parseInt(lines[i].split('CAM ')[1]);
-			if (target > state.cam) {
-				dist = target - state.cam;
+			if (target > mscript.state.cam) {
+				dist = target - mscript.state.cam;
 				for (var x = 0; x < dist; x++) {
 					arr.push('BF');
-					state_update('BF');
+					mscript.state_update('BF');
 				} 
 			} else {
-				dist = state.cam - target;
+				dist = mscript.state.cam - target;
 				for (var x = 0; x < dist; x++) {
 					arr.push('BB');
-					state_update('BB');
+					mscript.state_update('BB');
 				}
 			}
 		} else if (lines[i].substring(0, 4) === 'PROJ') { //directly go to that frame
-			if (state.loops.length > 0) { fail('Cannot go to absolute projector frame within a loop... yet.'); }
+			if (mscript.state.loops.length > 0) { 
+				mscript.fail('Cannot go to absolute projector frame within a loop... yet.'); 
+			}
 			target = parseInt(lines[i].split('PROJ ')[1]);
-			if (target > state.proj) {
-				dist = target - state.proj;
+			if (target > mscript.state.proj) {
+				dist = target - mscript.state.proj;
 				for (var x = 0; x < dist; x++) {
 					arr.push('PF');
-					state_update('PF');
+					mscript.state_update('PF');
 				} 
 			} else {
-				dist = state.proj - target;
+				dist = mscript.state.proj - target;
 				for (var x = 0; x < dist; x++) {
 					arr.push('PB');
-					state_update('PB');
+					mscript.state_update('PB');
 				} 
 			}
 		} else if (lines[i].substring(0, 3) === 'SET') { //set that state
 			if (lines[i].substring(0, 7) === 'SET CAM') {
-				state.cam = parseInt(lines[i].split('SET CAM')[1]);
+				mscript.state.cam = parseInt(lines[i].split('SET CAM')[1]);
 			} else if (lines[i].substring(0, 8) === 'SET PROJ') {
-				state.proj = parseInt(lines[i].split('SET PROJ')[1]);
+				mscript.state.proj = parseInt(lines[i].split('SET PROJ')[1]);
 			}
 		} else if (lines[i].substring(0, 1) === '#' || lines[i].substring(0, 2) === '//') {
 			//comments
@@ -134,72 +140,73 @@ var mcopy_script = function (text) {
 	}
 	output.success = true;
 	output.arr = arr;
-	output.cam = state.cam;
-	output.proj = state.proj;
-	return console.log(JSON.stringify(output));
+	output.cam = mscript.state.cam;
+	output.proj = mscript.state.proj;
+	if (typeof callback !== 'undefined') {
+		//should only be invoked by running mscript.tests()
+		callback(output);
+	} else {
+		return mscript.output(output);
+	}
 };
+mscript.last_loop = function last_loop () {
 
-var last_loop = function () {
-
-	return state.loops[state.loops.length - 1];
+	return mscript.state.loops[mscript.state.loops.length - 1];
 };
+mscript.parent_loop = function parent_loop () {
 
-var parent_loop = function () {
-
-	return state.loops[state.loops.length - 2];
+	return mscript.state.loops[mscript.state.loops.length - 2];
 };
-
-var state_update = function (cmd, val) {
+mscript.state_update = function state_update (cmd, val) {
 	if (cmd === 'END') {
 		for (var i = 0; i < val; i++) {
-			if (state.rec === 0) {
-				state.cam += state.loops[state.rec].cam;
-				state.proj += state.loops[state.rec].proj;
-			} else if (state.rec >= 1) {
-				state.loops[state.rec - 1].cam += state.loops[state.rec].cam;
-				state.loops[state.rec - 1].proj += state.loops[state.rec].proj;
+			if (mscript.state.rec === 0) {
+				mscript.state.cam += mscript.state.loops[mscript.state.rec].cam;
+				mscript.state.proj += mscript.state.loops[mscript.state.rec].proj;
+			} else if (mscript.state.rec >= 1) {
+				mscript.state.loops[mscript.state.rec - 1].cam += mscript.state.loops[mscript.state.rec].cam;
+				mscript.state.loops[mscript.state.rec - 1].proj += mscript.state.loops[mscript.state.rec].proj;
 			}
 		}
 	} else if (cmd === 'CF') {
-		if (state.loops.length < 1) {
-			state.cam++;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.cam++;
 		} else {
-			state.loops[state.rec].cam++;
+			mscript.state.loops[mscript.state.rec].cam++;
 		}
 	} else if (cmd === 'CB') {
-		if (state.loops.length < 1) {
-			state.cam--;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.cam--;
 		} else {
-			state.loops[state.rec].cam--;
+			mscript.state.loops[mscript.state.rec].cam--;
 		}
 	} else if (cmd === 'PF') {
-		if (state.loops.length < 1) {
-			state.proj++;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.proj++;
 		} else {
-			state.loops[state.rec].proj++;
+			mscript.state.loops[mscript.state.rec].proj++;
 		}		
 	} else if (cmd === 'PB') {
-		if (state.loops.length < 1) {
-			state.proj--;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.proj--;
 		} else {
-			state.loops[state.rec].proj--;
+			mscript.state.loops[mscript.state.rec].proj--;
 		}		
 	} else if (cmd === 'BF') {
-		if (state.loops.length < 1) {
-			state.cam++;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.cam++;
 		} else {
-			state.loops[state.rec].cam++;
+			mscript.state.loops[mscript.state.rec].cam++;
 		}		
 	} else if (cmd === 'BB') {
-		if (state.loops.length < 1) {
-			state.cam++;
+		if (mscript.state.loops.length < 1) {
+			mscript.state.cam--;
 		} else {
-			state.loops[state.rec].cam++;
+			mscript.state.loops[mscript.state.rec].cam++;
 		}		
 	}
 };
-
-var str_to_arr = function (str, cmd) {
+mscript.str_to_arr = function str_to_arr (str, cmd) {
 	var cnt = str.split(cmd),
 		c = parseInt(cnt[1]),
 		arr = [];
@@ -210,22 +217,164 @@ var str_to_arr = function (str, cmd) {
 	}
 	for (var i = 0; i < c; i++) {
 		arr.push(cmd);
-		state_update(cmd);
+		mscript.state_update(cmd);
 	}
 	return arr;
 };
+mscript.loop_count = function loop_count (str) {
 
-var loop_count = function (str) {
 	return parseInt(str.split('LOOP ')[1]);
 };
-
-var fail = function (reason) {
+mscript.fail = function fail (reason) {
 	console.error(JSON.stringify({success: false, error: true, msg : reason}));
 	process.exit();
 };
+mscript.output = function output (data) {
+	var json = true; //default
+	if (mscript.arg('-j', '--json')) {
+		json = true;
+	}
 
-if (input.indexOf('\n') !== -1) {
-	mcopy_script(input);
-} else {
-	mcopy_script(fs.readFileSync(input, 'utf8'));
-}
+	if (mscript.arg('-t', '--text')) {
+		json = false;
+	}
+
+	if (json) {
+		console.log(JSON.stringify(data));
+	} else {
+		var ids = Object.keys(data);
+		for (var i = 0; i < ids.length; i++) {
+			console.log(ids[i] + ': ' + data[ids[i]]);
+		}
+	}
+};
+mscript.init = function init () {
+
+	if (mscript.arg('-t', '--tests')) {
+		return mscript.tests();
+	}
+
+	if (mscript.arg('-v', '--verbose')) {
+		console.time('mscript');
+	}
+
+	if (mscript.arg('-c', '--cam')) {
+		mscript.state.cam = parseInt(process.argv[mscript.arg_pos('-c', '--cam') + 1]);
+	}
+
+	if (mscript.arg('-p', '--proj')) {
+		mscript.state.proj = parseInt(process.argv[mscript.arg_pos('-p', '--proj') + 1]);
+	}
+
+	if (mscript.arg('-f', '--file')) {
+		input = process.argv[mscript.arg_pos('-f', '--file') + 1];
+		mscript.interpret(fs.readFileSync(input, 'utf8'));
+	} else {
+		mscript.interpret(input);
+	}
+
+	if (mscript.arg('-v', '--verbose')) {
+		console.timeEnd('mscript');
+	}
+};
+
+mscript.tests = function tests () {
+	console.log('Running mscript tests');
+	console.time('Tests took');
+
+	mscript.alts_unique(); //perform check only during tests
+	var fail = function (script, obj) {
+		console.log('...Failed :(');
+		console.log(script);
+		console.log(obj);
+		process.exit();
+	};
+	var script = 'CF\nPF\nCB\nPB\nBF\nBB';
+	console.log('Basic function test...');
+	mscript.interpret(script, function (obj) {
+		if (obj.success === true 
+			&& obj.cam === 0
+			&& obj.proj === 0 
+			&& obj.arr.length === 6) {
+			console.log('...Passed!');
+		} else {
+			fail(script, obj);
+		}
+	});
+
+	var script = 'CF\nPF\nCB\nPB\nBF\nBB';
+	console.log('Functions with integers test...');
+	mscript.interpret(script, function (obj) {
+		if (obj.success === true 
+			&& obj.cam === 0
+			&& obj.proj === 0 
+			&& obj.arr.length === 6) {
+			console.log('...Passed!');
+		} else {
+			fail(script, obj);
+		}
+	});
+
+	script = 'CF 1000\nCB 1000\nSET PROJ 200\nPB 200';
+	console.log('Basic state test...');
+	mscript.interpret(script, function (obj) {
+		if (obj.success === true 
+			&& obj.cam === 0
+			&& obj.proj === 0) {
+			console.log('...Passed!');
+		} else {
+			fail(script, obj);
+		}
+	});
+
+	script = 'LOOP 10\nCF 3\nPF 1\nEND LOOP';
+	console.log('Basic loop test...');
+	mscript.interpret(script, function (obj) {
+		if (obj.success === true 
+			&& obj.cam === 30
+			&& obj.proj === 10
+			&& obj.arr.length === 40) {
+			console.log('...Passed!');
+		} else {
+			fail(script, obj);
+		}
+	});
+
+	script = 'LOOP 4\nLOOP 4\nPF\nBF\nEND LOOP\nEND LOOP';
+	console.log('Recursive loop test...');
+	mscript.interpret(script, function (obj) {
+		if (obj.success === true 
+			&& obj.cam === 16
+			&& obj.proj === 16
+			&& obj.arr.length === 32) {
+			console.log('...Passed!');
+		} else {
+			fail(script, obj);
+		}
+	});
+
+	console.log('All tests completed');
+	console.timeEnd('Tests took');
+};
+
+mscript.init();
+
+/*
+
+CAM # - go to camera frame #
+PROJ # - go to projector frame #
+
+SET CAM # - sets camera count to #
+SET PROJ # - sets projector count to #
+
+LOOP # - begin loop, can nest recursively, # times
+END LOOP - (or END) closes loop
+
+CF - Camera forwards
+PF - Projector forwards
+BF - Black forwards
+CB - Camera backwards
+PB - Projector backwards
+BB - Black backwards
+
+*/

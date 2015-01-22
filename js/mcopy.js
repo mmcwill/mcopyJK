@@ -65,13 +65,14 @@ mcopy.init = function () {
 		mcopy.gui.overlay(true);
 		mcopy.gui.spinner(true);
 		mcopy.stateinit();
-		mcopy.arduino.init(function () {
-			mcopy.arduino.connect(mcopy.gui.init);
-		});
-	    if (mcopy.arg('-m', '--mobile')) {
+		if (mcopy.arg('-m', '--mobile')) {
 	    	//mcopy.mobile.init();
 	    	mcopy.mobile.toggle();
 	    }
+		mcopy.arduino.init(function (success) {
+			if (!success) { return mcopy.gui.init(); }
+			mcopy.arduino.connect(mcopy.gui.init);
+		});
   
 	});
 };
@@ -181,6 +182,33 @@ mcopy.arduino = {
 	timer : 0,
 	lock : false
 };
+mcopy.arduino.init = function (callback) {
+	mcopy.log('Searching for devices...');
+	var cmd = 'ls /dev/tty.*';
+	exec(cmd, function (e, std) {
+		var devices = std.split('\n'),
+			matches = [];
+		devices.pop();
+		for (var i = 0; i < devices.length; i++) {
+			if (devices[i].indexOf('usbserial') !== -1
+				||devices[i].indexOf('usbmodem') !== -1){
+				matches.push(devices[i]);
+			}
+		}
+		if (matches.length === 0) {
+			mcopy.log('No devices found.');
+			mcopy.gui.spinner(false);
+			mcopy.gui.overlay(true);
+			if (callback) { callback(false); }
+		} else if (matches.length > 0) {
+			mcopy.log('Found ' + matches[0]);
+			mcopy.arduino.path = matches[0];
+			//once connected to the arduino
+			//start user interface
+			if (callback) { callback(true); }
+		}
+	});
+};
 //commands which respond to a sent char
 mcopy.arduino.send = function (cmd, res) {
 	if (!mcopy.arduino.lock) {
@@ -208,32 +236,6 @@ mcopy.arduino.end = function (data) {
 	} else {
 		//console.log('Received stray "' + data + '" from ' + mcopy.arduino.path); //silent to user
 	}
-};
-mcopy.arduino.init = function (callback) {
-	mcopy.log('Searching for devices...');
-	var cmd = 'ls /dev/tty.*';
-	exec(cmd, function (e, std) {
-		var devices = std.split('\n'),
-			matches = [];
-		devices.pop();
-		for (var i = 0; i < devices.length; i++) {
-			if (devices[i].indexOf('usbserial') !== -1
-				||devices[i].indexOf('usbmodem') !== -1){
-				matches.push(devices[i]);
-			}
-		}
-		if (matches.length === 0) {
-			mcopy.log('No devices found.');
-			mcopy.gui.spinner(false);
-			mcopy.gui.overlay(true);
-		} else if (matches.length > 0) {
-			mcopy.log('Found ' + matches[0]);
-			mcopy.arduino.path = matches[0];
-			//once connected to the arduino
-			//start user interface
-			if (callback) { callback(); }
-		}
-	});
 };
 mcopy.arduino.connect = function (callback) {
 	mcopy.log('Connecting to ' + mcopy.arduino.path + '...');
@@ -727,7 +729,8 @@ mcopy.gui.trad.shootGoto = function (t) {
 		other.val(val);
 		mcopy.gui.trad.counterFormat(other[0], undefined, true);
 	} else {
-		console.log('You screwed up the markup.');
+		//ALLOW TO EXECUTE WITH NO RESULTS
+		//console.log('You screwed up the markup.');
 	}
 };
 mcopy.gui.trad.updateCam = function (t) {

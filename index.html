@@ -155,12 +155,12 @@
 		<div id="actions">
 			<button id="seq_run" onclick="mcopy.seq.init();">RUN</button>
 			<button id="seq_stop">STOP</button>
-			<button id="seq_clear">CLEAR</button>
+			<button id="seq_clear" onclick="mcopy.gui.grid.clear();">CLEAR</button>
 			<button id="seq_plus24">+ 24</button>
 		</div>
 		<div>
 			<div>LOOP</div>
-			<input type="number" min="0" id="seq_loop"
+			<input type="number" min="0" id="seq_loop" value="00000" onchange="mcopy.gui.trad.counterFormat(this);"/>
 		</div>
 		<div id="stats">
 			<div class="timing">Time to complete: <span>0 ms</span></div>
