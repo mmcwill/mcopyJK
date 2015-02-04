@@ -48,6 +48,22 @@ mcopy.arg = function (shrt, lng) {
 	}
 	return false;
 };
+mcopy.fmtZero = function (val, len) {
+	var raw = val,
+		str = val + '',
+		output = ''
+	if (raw < 0) {
+		output = '-' + Array(len - (str.length - 1)).join('0') + str.replace('-', '');
+	} else {
+		if (str.length < len) {
+			output = Array(len - str.length).join('0') + str;
+		} else if (str.length >= len) {
+			str = parseInt(str) + '';
+			output = Array(len - str.length).join('0') + str;
+		}
+	}
+	return output;
+};
 
 /******
 	Initialize mcopy
@@ -421,6 +437,9 @@ mcopy.cmd.black_backward = function (callback) {
 *******/
 mcopy.seq = {};
 mcopy.seq.i = 0;
+mcopy.loop = 1;
+mcopy.loopCount = 0;
+mcopy.seq_time = 0;
 mcopy.seq.run = function () {
 	var cmd = mcopy.state.sequence.arr[mcopy.seq.i],
 		action = function () {
@@ -428,7 +447,8 @@ mcopy.seq.run = function () {
 				mcopy.seq.i++;
 				mcopy.seq.run();
 			}, mcopy.cfg.arduino.sequenceDelay);
-		};
+		},
+		timeEnd = 0;
 	if (mcopy.seq.stop()) { 
 		$('.row input').removeClass('h');
 		mcopy.log('Sequence stepped');
@@ -453,9 +473,27 @@ mcopy.seq.run = function () {
 			mcopy.cmd.black_backward(action);			
 		}
 	} else {
-		mcopy.log('Sequence completed!');
-		//clear gui
-		$('.row input').removeClass('h');
+		mcopy.loopCount++;
+		if (mcopy.loopCount < mcopy.loop) {
+			mcopy.log('Loop ' + mcopy.loopCount + ' completed!');
+			$('.row input').removeClass('h');
+			mcopy.seq.i = 0;
+			mcopy.seq.run();
+		} else {
+			mcopy.log('Sequence completed!');
+			timeEnd = +new Date();
+			timeEnd = timeEnd - mcopy.seq_time;
+			setTimeout(function () {
+				if (timeEnd < 2000) {
+					mcopy.log('Sequence took ' + timeEnd + 'ms');
+				} else {
+					mcopy.log('Sequence took ' + humanizeDuration(timeEnd));
+				}
+			}, 500);
+			//clear gui
+			$('.row input').removeClass('h');
+			mcopy.seq.stats();
+		}
 	}
 };
 mcopy.seq.stopState = false;
@@ -467,14 +505,28 @@ mcopy.seq.stop = function (state) {
 	}
 };
 mcopy.seq.init = function (start) {
-	if (!start) { start = 0; }
+	if (typeof start === 'undefined') { 
+		start = 0; 
+		mcopy.loopCount = 0;
+		mcopy.seq_time = +new Date();
+	}
 	mcopy.seq.stop(false);
 	mcopy.seq.i = start;
 	mcopy.seq.run();
 };
-mcopy.seq.timing = function () {
+mcopy.seq.stats = function () {
 	var ms = 0,
-		cmd = '';
+		cmd = '',
+		cam_total = 0,
+		proj_total = 0,
+		real_total = mcopy.state.sequence.arr.filter(function (elem) {
+			if (elem === undefined) {
+				return false;
+			}
+			return true;
+		});
+
+	//timing
 	for (var i = 0; i < mcopy.state.sequence.arr.length; i++) {
 		cmd = mcopy.state.sequence.arr[i];
 		if (cmd === 'CF' || cmd === 'CB'){
@@ -495,17 +547,48 @@ mcopy.seq.timing = function () {
 			ms += mcopy.cfg.arduino.serialDelay;
 		}
 		ms += mcopy.cfg.arduino.sequenceDelay;
+
+		if (cmd === 'CF' || cmd === 'BF') {
+			cam_total++;
+		}
+		if (cmd === 'CB' || cmd === 'BB') {
+			cam_total--;
+		}
+		if (cmd === 'PF') {
+			proj_total++;
+		}
+		if (cmd === 'PB') {
+			proj_total--;
+		}
 	}
+
+	//timing
+	ms = ms * mcopy.loop;
 	if (ms < 2000) {
-		$('#stats .timing span').text(ms + 'ms');
+		$('#seq_stats .timing span').text(ms + 'ms');
 	} else {
-		$('#stats .timing span').text(humanizeDuration(ms));
+		$('#seq_stats .timing span').text(humanizeDuration(ms));
 	}
+
+	//ending frames
+	cam_total = cam_total * mcopy.loop;
+	proj_total = proj_total * mcopy.loop;
+
+	$('#seq_stats .cam_end span').text(mcopy.fmtZero(mcopy.state.camera.pos + cam_total, 6));
+	$('#seq_stats .proj_end span').text(mcopy.fmtZero(mcopy.state.projector.pos + proj_total, 6));
+
+	//count
+	$('#seq_stats .seq_count span').text(real_total.length * mcopy.loop);
 	return ms;
 };
 
+mcopy.seq.clear = function () {
+	mcopy.state.sequence.size = 24;
+	mcopy.state.sequence.arr = [];
+};
+
 /******
-	GUI Object
+	GUI Object 
 *******/
 mcopy.gui = {};
 mcopy.gui.spinner = function (state) {
@@ -595,26 +678,8 @@ mcopy.gui.menu = function () {
 *******/
 mcopy.gui.grid = {};
 mcopy.gui.grid.layout = function () {
-	var check = '';
-	$('#cam_forward').append($('<div>').text('CAM'));
-	$('#proj_forward').append($('<div>').text('PROJ'));
-	$('#black_forward').append($('<div>').text('BLACK'));
-	$('#cam_backward').append($('<div>').text('CAM'));
-	$('#proj_backward').append($('<div>').text('PROJ'));
-	$('#black_backward').append($('<div>').text('BLACK'));
-	for (var i = 0; i < mcopy.state.sequence.size; i++) {
-		check = '<input type="checkbox" x="xxxx" />'.replace('xxxx', i);
-		$('#cam_forward').append($(check).addClass(mcopy.state.sequence.pads.cam_forward));
-		$('#proj_forward').append($(check).addClass(mcopy.state.sequence.pads.proj_forward));
-		$('#black_forward').append($(check).addClass(mcopy.state.sequence.pads.black_forward));
-		$('#cam_backward').append($(check).addClass(mcopy.state.sequence.pads.cam_backward));
-		$('#proj_backward').append($(check).addClass(mcopy.state.sequence.pads.proj_backward));
-
-		$('#black_backward').append($('<div>').append($(check).addClass(mcopy.state.sequence.pads.black_backward)).append($('<div>').text(i)));
-
-		mcopy.gui.grid.state(i);
-	}
-	mcopy.seq.timing();
+	mcopy.gui.grid.refresh();
+	mcopy.seq.stats();
 };
 mcopy.gui.grid.state = function (i) {
 	if (mcopy.state.sequence.arr[i] !== undefined) {
@@ -623,30 +688,29 @@ mcopy.gui.grid.state = function (i) {
 	}
 };
 mcopy.gui.grid.refresh = function () {
-	var check = '';
-	$('#cam_forward').empty();
-	$('#proj_forward').empty();
-	$('#black_forward').empty();
-	$('#cam_backward').empty();
-	$('#proj_backward').empty();
-	$('#black_backward').empty();
-
-	$('#cam_forward').append($('<div>').text('CAM'));
-	$('#proj_forward').append($('<div>').text('PROJ'));
-	$('#black_forward').append($('<div>').text('BLACK'));
-	$('#cam_backward').append($('<div>').text('CAM'));
-	$('#proj_backward').append($('<div>').text('PROJ'));
-	$('#black_backward').append($('<div>').text('BLACK'));
-	for (var i = 0; i < mcopy.state.sequence.size; i++) {
-		check = '<input type="checkbox" x="xxxx" />'.replace('xxxx', i);
-		$('#cam_forward').append($(check).addClass(mcopy.state.sequence.pads.cam_forward));
-		$('#proj_forward').append($(check).addClass(mcopy.state.sequence.pads.proj_forward));
-		$('#black_forward').append($(check).addClass(mcopy.state.sequence.pads.black_forward));
-		$('#cam_backward').append($(check).addClass(mcopy.state.sequence.pads.cam_backward));
-		$('#proj_backward').append($(check).addClass(mcopy.state.sequence.pads.proj_backward));
-		$('#black_backward').append($('<div>').append($(check).addClass(mcopy.state.sequence.pads.black_backward)).append('' + i));
+	var cmds = ['cam_forward', 'proj_forward', 'black_forward', 'cam_backward', 'proj_backward', 'black_backward'],
+		check = '',
+		width = 970 + ((940 / 24) * Math.abs(24 - mcopy.state.sequence.size));
+	$('#sequence').width(width + 'px');
+	for (var i = 0; i < cmds.length; i++) {
+		$('#' + cmds[i]).empty();
+		if (cmds[i].substring(0, 3) === 'cam') {
+			$('#' + cmds[i]).append($('<div>').text('CAM'));
+		} else if (cmds[i].substring(0, 4) === 'proj') {
+			$('#' + cmds[i]).append($('<div>').text('PROJ'));
+		} else if (cmds[i].substring(0, 5) === 'black') {
+			$('#' + cmds[i]).append($('<div>').text('BLACK'));
+		}
+		for (var x = 0; x < mcopy.state.sequence.size; x++) {
+			check = '<input type="checkbox" x="xxxx" />'.replace('xxxx', x);
 			
-		mcopy.gui.grid.state(i);
+			if (i === cmds.length - 1) {
+				$('#' + cmds[i]).append($('<div>').append($(check).addClass(mcopy.state.sequence.pads[cmds[i]])).append($('<div>').text(x)));
+			} else {
+				$('#' + cmds[i]).append($(check).addClass(mcopy.state.sequence.pads[cmds[i]]));
+			}
+			mcopy.gui.grid.state(x);
+		}
 	}
 };
 mcopy.gui.grid.click = function (t) {
@@ -659,43 +723,46 @@ mcopy.gui.grid.click = function (t) {
 		mcopy.state.sequence.arr[i] = undefined;
 		delete mcopy.state.sequence.arr[i];
 	}
-	mcopy.seq.timing();
+	mcopy.seq.stats();
 };
 mcopy.gui.grid.clear = function () {
-	//
-	//
+	var doit = confirm('Are you sure you want to clear this sequence?');
+	if (doit) {
+		mcopy.seq.clear();
+		mcopy.gui.grid.refresh();
+		mcopy.log('Sequencer cleared');
+	}
+};
+mcopy.gui.grid.loopChange = function (t) {
+	count = parseInt(t.value);
+	mcopy.loop = count;
+	mcopy.log('Loop count set to ' + mcopy.loop);
+	mcopy.seq.stats();
+};
+mcopy.gui.grid.plus_24 = function () {
+	mcopy.state.sequence.size += 24;
+	mcopy.gui.grid.refresh();
+	mcopy.log('Sequencer expanded to ' + mcopy.state.sequence.size + ' steps');
 };
 mcopy.gui.events = function () {
 	$(document.body).on('click', 'input[type=checkbox]', function () {
 		mcopy.gui.grid.click(this);
 	});
 };
-mcopy.gui.checklist = function () {
-	//display checklist
-	//bind hide event if all are checked off
-	//allow gui layout
-};
 
 /******
 	Traditional view
 *******/
 mcopy.gui.trad = {};
+mcopy.gui.trad.seq = [];
+mcopy.gui.trad.seqCount = 0;
+mcopy.gui.trad.seqStop = false;
+mcopy.gui.trad.seqTime = 0;
 mcopy.gui.trad.mode = 'seq';
 mcopy.gui.trad.seqMode = 'alt';
 mcopy.gui.trad.counterFormat = function (t, normal, prevent) {
-	var len = 6,
-		raw = t.value,
-		str = t.value + '';
-	if (raw < 0) {
-		t.value = '-' + Array(len - (str.length - 1)).join('0') + str.replace('-', '');
-	} else {
-		if (str.length < len) {
-			t.value = Array(len - str.length).join('0') + str;
-		} else if (str.length >= len) {
-			str = parseInt(str) + '';
-			t.value = Array(len - str.length).join('0') + str;
-		}
-	}
+	var raw = t.value;
+	t.value = mcopy.fmtZero(raw, 6);
 	if (typeof normal !== 'undefined' && parseInt(raw) !== normal) {
 		$(t).addClass('changed');
 	} else {
@@ -896,6 +963,105 @@ mcopy.gui.trad.sendToSeq = function () {
 mcopy.gui.trad.step = function () {};
 mcopy.gui.trad.skip = function () {}
 
+
+mcopy.gui.trad.seq_run = function () {
+	mcopy.log(mcopy.gui.trad.mode);
+	if (mcopy.gui.trad.mode === 'cam') {
+		mcopy.gui.trad.dedicated(mcopy.gui.trad.mode);
+	} else if (mcopy.gui.trad.mode === 'proj') {
+		mcopy.gui.trad.dedicated(mcopy.gui.trad.mode);
+	} else if (mcopy.gui.trad.mode === 'seq') {
+
+	}
+	mcopy.gui.trad.seqTime = +new Date();
+};
+mcopy.gui.trad.dedicated = function (type) {
+	mcopy.gui.trad.seq = [];
+	var current,
+		dir,
+		shoot = parseInt($('#shoot_' + type).val()),
+		go_to = parseInt($('#goto_' + type).val()),
+		cont = true,
+		cmd = '';
+	if (type === 'cam') {
+		current = mcopy.state.camera.pos;
+		dir = mcopy.state.camera.direction;
+		cmd = 'C';
+	} else if (type === 'proj') {
+		current = mcopy.state.projector.pos;
+		dir = mcopy.state.projector.direction;
+		cmd = 'P';
+	}
+	if (dir) {
+		cmd += 'F';
+	} else {
+		cmd += 'B';
+	}
+
+	if (go_to < current && dir) {
+		//direction is wrong
+		//cont = confirm('');
+	}
+
+	if (go_to > current && !dir) {
+		//direction is wrong
+	}
+
+	for (var i = 0; i < shoot; i++) {
+		mcopy.gui.trad.seq.push(cmd);
+	}
+	console.log(mcopy.gui.trad.seq);
+	//mcopy.log(current + ' ' + dir + ' ' + shoot + ' ' + go_to);
+};
+
+mcopy.gui.trad.log = function (msg) {
+	$('#status').val(msg);
+};
+
+mcopy.gui.trad.run = function () {
+	var cmd = mcopy.gui.trad.seq[mcopy.gui.trad.seqCount],
+		action = function () {
+			setTimeout(function () {
+				mcopy.gui.trad.seqCount++;
+				mcopy.gui.trad.run();
+			}, mcopy.cfg.arduino.sequenceDelay);
+		},
+		timeEnd;
+	if (mcopy.gui.trad.seqStop) { 
+		mcopy.gui.trad.log('Stopped');
+		mcopy.log('Sequence stopped');
+		return false; 
+	}
+	if (mcopy.gui.trad.seqCount <= copy.gui.trad.seq.length && cmd !== undefined) {
+		mcopy.gui.trad.log(cmd);
+		mcopy.log('Sequence step ' + mcopy.seq.i + ' command ' + cmd + '...');
+		if (cmd === 'CF'){
+			mcopy.cmd.cam_forward(action);
+		} else if (cmd === 'CB') {
+			mcopy.cmd.cam_backward(action);
+		} else if (cmd === 'PF') {
+			mcopy.cmd.proj_forward(action);			
+		} else if (cmd === 'PB') {
+			mcopy.cmd.proj_backward(action);			
+		} else if (cmd === 'BF') {
+			mcopy.cmd.black_forward(action);			
+		} else if (cmd === 'BB') {
+			mcopy.cmd.black_backward(action);			
+		}
+	} else {
+		mcopy.log('Sequence completed!');
+		timeEnd = +new Date();
+		timeEnd = timeEnd - mcopy.gui.trad.seqTime;
+		setTimeout(function () {
+			if (timeEnd < 2000) {
+				mcopy.log('Sequence took ' + timeEnd + 'ms');
+			} else {
+				mcopy.log('Sequence took ' + humanizeDuration(timeEnd));
+			}
+		}, 500);
+	}
+};
+
 /******
 	Traditional view's sequence object
 *******/
@@ -1004,12 +1170,13 @@ mcopy.gui.trad.sections = function () {
 		}
 	}
 };
-mcopy.gui
+//mcopy.gui
 
 /******
 	Event Bindings
 *******/
 mcopy.bindings = function () {
+
 	$('#traditional .section').on('mousedown', mcopy.gui.trad.sections);
 };
 
@@ -1091,5 +1258,5 @@ $(document).ready(mcopy.init);
 
 setTimeout(function () {
 	//mcopy.arduino.tests();
-	mcopy.gui.trad.alt(10, 15);
+	//mcopy.gui.trad.alt(10, 15);
 }, 10000);

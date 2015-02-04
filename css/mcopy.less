@@ -143,7 +143,7 @@ i{
 	.section{
 		width: 33%;
 		float: left;
-		height: 450px;
+		//height: 450px;
 		padding: 10px;
 		box-sizing: border-box;
 		.container{
@@ -201,17 +201,6 @@ i{
 		}
 		&.first{
 			margin-top: 25px;
-		}
-	}
-	.onoff{
-		padding: 9px 13px 0;
-		span{
-			margin-left: 3px;
-			font-size: 12px;
-		}
-		label{
-			width: 48%;
-			display: inline-block;
 		}
 	}
 	.ratio{
@@ -277,6 +266,17 @@ i{
 		margin: 10px 5% 0 5%;
 	}
 }
+.onoff{
+	padding: 9px 13px 0;
+	span{
+		margin-left: 3px;
+		font-size: 12px;
+	}
+	label{
+		width: 48%;
+		display: inline-block;
+	}
+}
 
 /*
  * SEQUENCER
@@ -338,8 +338,9 @@ i{
 		}
 	}
 	#sequence{
-		width: 1000em;
+		width: 970px;
 		padding-bottom: 15px;
+		height: 230px;
 		#cam_forward,
 		#proj_forward,
 		#black_forward{
@@ -412,12 +413,25 @@ i{
 	#actions{
 		padding: 20px;
 	}
-	#stats{
+	#seq_stats{
+		.helvetica();
+		width: 40%;
+		float: right;
 		padding: 20px;
+		span{
+			font-weight: 600;
+			float: right;
+		}
 		.timing{
-			span{
-				font-style: italic;
-			}
+		}
+	}
+	#seq_loop{
+		padding: 0 28px;
+		input{
+			.monospace();
+			font-size: 23px;
+			width: 121px;
+			padding: 12px;
 		}
 	}
 	button{
