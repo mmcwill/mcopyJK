@@ -1128,8 +1128,9 @@ mcopy.gui.mscript.parse = function (str) {
 	});
 };
 mcopy.gui.mscript.generate = function (seq) {
-
-	console.dir(seq);
+	var script = '';
+	script = seq.join('\n');
+	mcopy.editor.setValue(script);
 };
 /******
 	File Handler
