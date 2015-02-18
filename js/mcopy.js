@@ -739,6 +739,7 @@ mcopy.gui.grid.clear = function () {
 	if (doit) {
 		mcopy.seq.clear();
 		mcopy.gui.grid.refresh();
+		mcopy.seq.stats();
 		mcopy.log('Sequencer cleared');
 	}
 };
@@ -934,9 +935,14 @@ mcopy.gui.trad.name_val = function (n, v) {
 	});
 	return out[0];
 };
-mcopy.gui.trad.alt = function (cam, proj) {
-	var cam_str = '',
+mcopy.gui.trad.alt = function () {
+	mcopy.gui.trad.seq = [];
+	var proj = $('#trad_seq_proj').val(),
+		cam = $('#trad_seq_cam').val(),
+		cam_str = '',
 		proj_str = '',
+		cam_arr = [],
+		proj_arr = [],
 		seq = [];
 	if (mcopy.state.camera.direction) {
 		cam_str = 'CF';
@@ -948,35 +954,72 @@ mcopy.gui.trad.alt = function (cam, proj) {
 	} else {
 		proj_str = 'PB';
 	}
-	cam = new Array(cam + 1).join(cam_str + ' ').split(' ');
-	cam.pop();
-	console.dir(cam);
-	proj = new Array(proj + 1).join(proj_str + ' ').split(' ');
-	proj.pop();
-	console.dir(proj);
-	for (var i = 0; i < cam.length; i++) { //proj and cam length should ===
-		seq.push(cam[i]);
-		if (typeof proj[i] !== 'undefined') {
-			seq.push(proj[i]);
+	for (var i = 0; i < cam; i++) {
+		cam_arr.push(cam_str);
+	}
+	console.dir(cam_arr);
+	for (var i = 0; i < proj; i++) {
+		proj_arr.push(proj_str);
+	}
+	mcopy.gui.trad.seq = cam_arr.concat(proj_arr);
+
+};
+mcopy.gui.trad.step = function () {};
+mcopy.gui.trad.skip = function () {
+	var proj = $('#trad_seq_proj').val(),
+		cam = $('#trad_seq_cam').val(),
+		cam_str = '',
+		proj_str = '',
+		cam_arr = [],
+		proj_arr = [],
+		seq = [];
+	if (mcopy.state.camera.direction) {
+		cam_str = 'CF';
+	} else {
+		cam_str = 'CB';
+	}
+	if (mcopy.state.projector.direction) {
+		proj_str = 'PF';
+	} else {
+		proj_str = 'PB';
+	}
+	for (var i = 0; i < cam; i++) {
+		cam_arr.push(cam_str);
+	}
+	console.dir(cam_arr);
+	for (var i = 0; i < proj; i++) {
+		proj_arr.push(proj_str);
+	}
+	console.dir(proj_arr);
+	for (var i = 0; i < cam_arr.length; i++) { //proj and cam length should ===
+		seq.push(cam_arr[i]);
+		if (typeof proj_arr[i] !== 'undefined') {
+			seq.push(proj_arr[i]);
 		}
 	}
 	console.dir(seq);
 	return seq;
 };
-mcopy.gui.trad.sendToSeq = function () {
+mcopy.gui.trad.loop = function () {
+	if (mcopy.gui.trad.seqMode === 'alt') {
+		mcopy.gui.trad.alt();
+	} else if (mcopy.gui.trad.seqMode === 'step') {
+		mcopy.gui.trad.step();
+	} else  if (mcopy.gui.trad.seqMode === 'skip') {
+		mcopy.gui.trad.skip();
+	}
 };
-mcopy.gui.trad.step = function () {};
-mcopy.gui.trad.skip = function () {}
 mcopy.gui.trad.seq_run = function () {
-	mcopy.log(mcopy.gui.trad.mode);
 	if (mcopy.gui.trad.mode === 'cam') {
 		mcopy.gui.trad.dedicated(mcopy.gui.trad.mode);
 	} else if (mcopy.gui.trad.mode === 'proj') {
 		mcopy.gui.trad.dedicated(mcopy.gui.trad.mode);
 	} else if (mcopy.gui.trad.mode === 'seq') {
-
+		mcopy.gui.trad.loop();
 	}
 	mcopy.gui.trad.seqTime = +new Date();
+	mcopy.gui.trad.seqCount = 0;
+	mcopy.gui.trad.run();
 };
 mcopy.gui.trad.seq_next = function () {
 
@@ -1002,31 +1045,24 @@ mcopy.gui.trad.dedicated = function (type) {
 		dir = mcopy.state.projector.direction;
 		cmd = 'P';
 	}
-
 	if (go_to < current && dir) {
 		//direction is wrong
 		mcopy.gui.trad.updateDir({value: type + '_backward'});
 		dir = false;
 	}
-
 	if (go_to > current && !dir) {
 		//direction is wrong
 		mcopy.gui.trad.updateDir({value: type + '_forward'});
 		dir = true;
 	}
-
 	if (dir) {
 		cmd += 'F';
 	} else {
 		cmd += 'B';
 	}
-
 	for (var i = 0; i < Math.abs(shoot); i++) {
 		mcopy.gui.trad.seq.push(cmd);
 	}
-	console.log(mcopy.gui.trad.seq);
-	mcopy.gui.trad.seqCount = 0;
-	mcopy.gui.trad.run();
 };
 mcopy.gui.trad.log = function (msg) {
 
@@ -1127,10 +1163,17 @@ mcopy.gui.mscript.parse = function (str) {
 		mcopy.gui.mscript.data = JSON.parse(data);
 	});
 };
-mcopy.gui.mscript.generate = function (seq) {
-	var script = '';
+mcopy.gui.mscript.generate = function () {
+	var script = '',
+		seq = mcopy.state.sequence.arr;
 	script = seq.join('\n');
 	mcopy.editor.setValue(script);
+	$('#nav_script').click();
+};
+mcopy.gui.mscript.sequencer = function () {
+	//sends current script to sequencer view
+
+	//$()
 };
 /******
 	File Handler

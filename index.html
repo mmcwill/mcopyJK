@@ -68,7 +68,7 @@
 				<button onclick="mcopy.gui.trad.seq_next();">SINGLE FRAME <span>SEQUENCE</span></button>
 				<div class="ratio">
 					<label>RATIO</label>
-					<span>CAMERA</span><input type="number" value="1" min="0" /> : <input type="number" value="1" min="0" /><span>PROJECTOR</span>
+					<span>CAMERA</span><input type="number" value="1" min="0" id="trad_seq_cam"/> : <input type="number" value="1" min="0" id="trad_seq_proj" /><span>PROJECTOR</span>
 				</div>
 				<div class="onoff alt_mode">
 					<form>
@@ -164,7 +164,7 @@
 			<button id="seq_stop" onclick="mcopy.seq.stop(true);">STOP</button>
 			<button id="seq_clear" onclick="mcopy.gui.grid.clear();">CLEAR</button>
 			<button id="seq_plus24" onclick="mcopy.gui.grid.plus_24();">+ 24</button>
-			<button id="seq_mscript" onclick="mcopy.gui.mscript.generate(mcopy.state.sequence.arr);$('#nav_script').click();">TO SCRIPT</button>
+			<button id="seq_mscript" onclick="mcopy.gui.mscript.generate();">TO SCRIPT</button>
 		</div>
 		<div id="seq_loop">
 			<h3>LOOPS</h3>
