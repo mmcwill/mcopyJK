@@ -10,7 +10,6 @@ __/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____
 		_\///______________\///________\/////////_______\/////_______\///___by m mcwilliams__\///________
 */
 
-//console.log(process.versions['node-webkit']);
 var fs = require('fs'),
 	gui = require('nw.gui'),
 	win = gui.Window.get(),
@@ -63,6 +62,15 @@ mcopy.fmtZero = function (val, len) {
 		}
 	}
 	return output;
+};
+mcopy.notify = function (title, message) {
+	//osascript -e 'display notification "Lorem ipsum dolor sit amet" with title "Title"'
+	//Todo: fix icon (maybe write script to file, change icon, evaluate applescript)
+	title = title.replace(new RegExp("'", 'g'), '');
+	message = message.replace(new RegExp("'", 'g'), '');
+	var str = 'display notification "' + message + '" with title "' + title + '"',
+		cmd = "osascript -e '" + str + "';";
+	mcopy.exec(cmd);
 };
 
 /******
@@ -581,7 +589,6 @@ mcopy.seq.stats = function () {
 	$('#seq_stats .seq_count span').text(real_total.length * mcopy.loop);
 	return ms;
 };
-
 mcopy.seq.clear = function () {
 	mcopy.state.sequence.size = 24;
 	mcopy.state.sequence.arr = [];
@@ -656,6 +663,8 @@ mcopy.gui.changeView = function (t) {
 		mcopy.gui.mscript.open(last);
 	}
 	$(t).addClass('current');
+	$('body').removeClass();
+	$('body').addClass(mcopy.state.mode);
 };
 mcopy.gui.overlay = function (state) {
 	if (state) {
@@ -914,12 +923,12 @@ mcopy.gui.trad.changeSeqMode = function (t) {
 	}
 	//
 };
-
 mcopy.gui.trad.name_val = function (n, v) {
 	var radios = $('#trad_loop input[type=radio]'),
 		out;
 	radios.each(function () {
-		if ($(this).val() === v && $(this).attr('name') === n) {
+		if ($(this).val() === v 
+			&& $(this).attr('name') === n) {
 			out = $(this);
 		}
 	});
@@ -954,16 +963,10 @@ mcopy.gui.trad.alt = function (cam, proj) {
 	console.dir(seq);
 	return seq;
 };
-
-//sets up current sequence on sequencer GUI
 mcopy.gui.trad.sendToSeq = function () {
-
 };
-
 mcopy.gui.trad.step = function () {};
 mcopy.gui.trad.skip = function () {}
-
-
 mcopy.gui.trad.seq_run = function () {
 	mcopy.log(mcopy.gui.trad.mode);
 	if (mcopy.gui.trad.mode === 'cam') {
@@ -974,6 +977,13 @@ mcopy.gui.trad.seq_run = function () {
 
 	}
 	mcopy.gui.trad.seqTime = +new Date();
+};
+mcopy.gui.trad.seq_next = function () {
+
+	alert('Perform next action in sequence');
+};
+mcopy.gui.trad.seq_refresh = function () {
+
 };
 mcopy.gui.trad.dedicated = function (type) {
 	mcopy.gui.trad.seq = [];
@@ -992,32 +1002,36 @@ mcopy.gui.trad.dedicated = function (type) {
 		dir = mcopy.state.projector.direction;
 		cmd = 'P';
 	}
+
+	if (go_to < current && dir) {
+		//direction is wrong
+		mcopy.gui.trad.updateDir({value: type + '_backward'});
+		dir = false;
+	}
+
+	if (go_to > current && !dir) {
+		//direction is wrong
+		mcopy.gui.trad.updateDir({value: type + '_forward'});
+		dir = true;
+	}
+
 	if (dir) {
 		cmd += 'F';
 	} else {
 		cmd += 'B';
 	}
 
-	if (go_to < current && dir) {
-		//direction is wrong
-		//cont = confirm('');
-	}
-
-	if (go_to > current && !dir) {
-		//direction is wrong
-	}
-
-	for (var i = 0; i < shoot; i++) {
+	for (var i = 0; i < Math.abs(shoot); i++) {
 		mcopy.gui.trad.seq.push(cmd);
 	}
 	console.log(mcopy.gui.trad.seq);
-	//mcopy.log(current + ' ' + dir + ' ' + shoot + ' ' + go_to);
+	mcopy.gui.trad.seqCount = 0;
+	mcopy.gui.trad.run();
 };
-
 mcopy.gui.trad.log = function (msg) {
+
 	$('#status').val(msg);
 };
-
 mcopy.gui.trad.run = function () {
 	var cmd = mcopy.gui.trad.seq[mcopy.gui.trad.seqCount],
 		action = function () {
@@ -1032,9 +1046,9 @@ mcopy.gui.trad.run = function () {
 		mcopy.log('Sequence stopped');
 		return false; 
 	}
-	if (mcopy.gui.trad.seqCount <= copy.gui.trad.seq.length && cmd !== undefined) {
-		mcopy.gui.trad.log(cmd);
-		mcopy.log('Sequence step ' + mcopy.seq.i + ' command ' + cmd + '...');
+	if (mcopy.gui.trad.seqCount <= mcopy.gui.trad.seq.length && cmd !== undefined) {
+		mcopy.gui.trad.log(mcopy.gui.trad.seqCount + ' : ' + cmd);
+		mcopy.log('Sequence step ' + mcopy.gui.trad.seqCount + ' command ' + cmd + '...');
 		if (cmd === 'CF'){
 			mcopy.cmd.cam_forward(action);
 		} else if (cmd === 'CB') {
@@ -1050,6 +1064,12 @@ mcopy.gui.trad.run = function () {
 		}
 	} else {
 		mcopy.log('Sequence completed!');
+		mcopy.notify('mcopy', 'Sequence completed!');
+		$('#goto_cam').change();
+		$('#shoot_cam').change();
+		$('#goto_proj').change();
+		$('#shoot_proj').change();
+		$('#status').val('Done');
 		timeEnd = +new Date();
 		timeEnd = timeEnd - mcopy.gui.trad.seqTime;
 		setTimeout(function () {
@@ -1063,28 +1083,12 @@ mcopy.gui.trad.run = function () {
 };
 
 /******
-	Traditional view's sequence object
+	Mscript GUI
 *******/
-mcopy.gui.trad.seq = {
-	cam : [],
-	proj : [],
-	seq : {
-		alt : [],
-		step : [],
-		skip : []
-	}
-};
-
-mcopy.gui.trad.seq_next = function () {
-
-	alert('Perform next action in sequence');
-};
-mcopy.gui.trad.seq_refresh = function () {};
-
-//mscript view
 mcopy.gui.mscript = {};
-mcopy.gui.mscript.data = [];
+mcopy.gui.mscript.data = {};
 mcopy.gui.mscript.raw = '';
+mcopy.gui.mscript.last = '';
 mcopy.gui.mscript.init = function () {
 	mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
 		lineNumbers: true,
@@ -1102,7 +1106,6 @@ mcopy.gui.mscript.close = function () {
 	$('#mscript').hide();
 	$('#' + mcopy.gui.mscript.last).click();
 };
-mcopy.gui.mscript.last = '';
 mcopy.gui.mscript.open = function (last) {
 	mcopy.gui.mscript.last = last;
 	mcopy.editor.setSize(null, $(window).height() - 20);
@@ -1123,6 +1126,10 @@ mcopy.gui.mscript.parse = function (str) {
 	mcopy.exec(cmd, function (data) {
 		mcopy.gui.mscript.data = JSON.parse(data);
 	});
+};
+mcopy.gui.mscript.generate = function (seq) {
+
+	console.dir(seq);
 };
 /******
 	File Handler
@@ -1154,7 +1161,6 @@ mcopy.file.mscript = function (input, callback) {
 		if (callback) { callback(obj); }
 	});
 };
-
 mcopy.gui.trad.sections = function () {
 	var label = 'current';
 	if (!$(this).hasClass(label)) {
@@ -1170,7 +1176,6 @@ mcopy.gui.trad.sections = function () {
 		}
 	}
 };
-//mcopy.gui
 
 /******
 	Event Bindings
@@ -1185,6 +1190,7 @@ mcopy.bindings = function () {
 *******/
 mcopy.mobile = {};
 mcopy.mobile.fail = function (res, msg) {
+
 	res.json(500, {success: false, err: msg});
 };
 mcopy.mobile.init = function () {
@@ -1207,7 +1213,7 @@ mcopy.mobile.init = function () {
 	});
 	app.get('/cmd/:cmd', function (req, res) {
 		if (typeof req.params.cmd !== 'undefined') {
-
+			mcopy.log(req.params.cmd);
 		} else {
 			mcopy.mobile.fail('No command provided');
 		}
@@ -1222,6 +1228,7 @@ mcopy.mobile.init = function () {
 	http.createServer(app).listen(mcopy.cfg.ext_port);
 
 	mcopy.log('Mobile server started. Connect at http://' + ip + ':' + mcopy.cfg.ext_port);
+	mcopy.notify('mcopy', 'Started mobile server at http://' + ip + ':' + mcopy.cfg.ext_port);
 };
 mcopy.mobile.stop = function () {
 	mcopy.log('Stopping mobile app...');
@@ -1255,8 +1262,3 @@ mcopy.mobile.log = function (str, status) {
 };
 
 $(document).ready(mcopy.init);
-
-setTimeout(function () {
-	//mcopy.arduino.tests();
-	//mcopy.gui.trad.alt(10, 15);
-}, 10000);

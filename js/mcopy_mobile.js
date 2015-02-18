@@ -2,7 +2,15 @@ $(document).ready(function () {
 
 });
 
-var socket = io.connect();
-socket.on('message', function (data) {
-	$('body').html('<pre>' + JSON.stringify(data.state) ;+ '</pre>');
-});
+var mm = {};
+mm.get = function (cmd) {
+	var obj = {
+		url : '/cmd/' + cmd,
+		type : 'GET',
+		success : function (data) {
+			if (data.success) {
+				mm.display(data);
+			}
+		}
+	};
+};

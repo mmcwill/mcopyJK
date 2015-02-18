@@ -8,6 +8,9 @@
 @BACKWARD: #AB1A25;
 @SELECTED: #DAE035;
 
+@SEQ: #3C3636;
+@SCRIPT: rgb(39, 40, 34);
+
 /*
  * MIXINS
  */
@@ -50,6 +53,12 @@ body{
 	background: @BG;
 	overflow-x: hidden;
 	padding-top: 20px;
+	&.script{
+		background: @SCRIPT;
+	}
+	&.seq{
+		background: @SEQ;
+	}
 }
 *{
 	cursor: default;
