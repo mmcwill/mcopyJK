@@ -964,15 +964,15 @@ mcopy.gui.trad.alt = function () {
 	mcopy.gui.trad.seq = cam_arr.concat(proj_arr);
 
 };
-mcopy.gui.trad.step = function () {};
-mcopy.gui.trad.skip = function () {
+mcopy.gui.trad.step = function () {
 	var proj = $('#trad_seq_proj').val(),
 		cam = $('#trad_seq_cam').val(),
 		cam_str = '',
 		proj_str = '',
 		cam_arr = [],
 		proj_arr = [],
-		seq = [];
+		seq = [],
+		len = 0;
 	if (mcopy.state.camera.direction) {
 		cam_str = 'CF';
 	} else {
@@ -986,19 +986,57 @@ mcopy.gui.trad.skip = function () {
 	for (var i = 0; i < cam; i++) {
 		cam_arr.push(cam_str);
 	}
-	console.dir(cam_arr);
 	for (var i = 0; i < proj; i++) {
 		proj_arr.push(proj_str);
 	}
-	console.dir(proj_arr);
-	for (var i = 0; i < cam_arr.length; i++) { //proj and cam length should ===
+	len = proj_arr.length;
+	if (len < cam_arr.length) {
+		len = cam_arr.length;
+	}
+	for (var i = 0; i < len; i++) {
 		seq.push(cam_arr[i]);
 		if (typeof proj_arr[i] !== 'undefined') {
 			seq.push(proj_arr[i]);
 		}
 	}
-	console.dir(seq);
-	return seq;
+	mcopy.gui.trad.seq = seq;
+};
+mcopy.gui.trad.skip = function () {
+	var proj = $('#trad_seq_proj').val(),
+		cam = $('#trad_seq_cam').val(),
+		cam_str = '',
+		proj_str = '',
+		cam_arr = [],
+		proj_arr = [],
+		seq = [],
+		len = 0;
+	if (mcopy.state.camera.direction) {
+		cam_str = 'CF';
+	} else {
+		cam_str = 'CB';
+	}
+	if (mcopy.state.projector.direction) {
+		proj_str = 'PF';
+	} else {
+		proj_str = 'PB';
+	}
+	for (var i = 0; i < cam; i++) {
+		cam_arr.push(cam_str);
+	}
+	for (var i = 0; i < proj; i++) {
+		proj_arr.push(proj_str);
+	}
+	len = proj_arr.length;
+	if (len < cam_arr.length) {
+		len = cam_arr.length;
+	}
+	for (var i = 0; i < len; i++) {
+		if (typeof cam_arr[i] !== 'undefined') {
+			seq.push(cam_arr[i]);
+		}
+		seq.push(proj_arr[i]);
+	}
+	mcopy.gui.trad.seq = seq;
 };
 mcopy.gui.trad.loop = function () {
 	if (mcopy.gui.trad.seqMode === 'alt') {
