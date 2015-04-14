@@ -11,7 +11,10 @@ var mcopy = {};
 /******
 	Configuration Object
 *******/
-mcopy.cfgFile = 'cfg.json';
+mcopy.cfgFile = './data/cfg.json';
+if (!fs.existsSync(mcopy.cfgFile)) {
+		fs.writeFileSync(mcopy.cfgFile, fs.readFileSync('./data/cfg.json.default'));
+}
 mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
 
 mcopy.tests = function (callback) {

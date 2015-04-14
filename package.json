@@ -33,6 +33,7 @@
     "handlebars" : "^2.0.0",
     "serialport" : "^1.4.6",
     "humanize-duration": "^2.1.0",
-    "node-uuid" : "^1.4.1"
+    "node-uuid" : "^1.4.1",
+    "moment" : "^2.10.2"
   }
 }
