@@ -1,15 +1,3 @@
-/*
-__/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____/\\\________/\\\_        
- _\/\\\\\\________/\\\\\\_____/\\\////////______/\\\///\\\____\/\\\/////////\\\_\///\\\____/\\\/__       
-  _\/\\\//\\\____/\\\//\\\___/\\\/_____________/\\\/__\///\\\__\/\\\_______\/\\\___\///\\\/\\\/____      
-   _\/\\\\///\\\/\\\/_\/\\\__/\\\______________/\\\______\//\\\_\/\\\\\\\\\\\\\/______\///\\\/______     
-	_\/\\\__\///\\\/___\/\\\_\/\\\_____________\/\\\_______\/\\\_\/\\\/////////__________\/\\\_______    
-	 _\/\\\____\///_____\/\\\_\//\\\____________\//\\\______/\\\__\/\\\___________________\/\\\_______   
-	  _\/\\\_____________\/\\\__\///\\\___________\///\\\__/\\\____\/\\\___________________\/\\\_______  
-	   _\/\\\_____________\/\\\____\////\\\\\\\\\____\///\\\\\/_____\/\\\___________________\/\\\_______ 
-		_\///______________\///________\/////////_______\/////_______\///___by m mcwilliams__\///________
-*/
-
 var fs = require('fs'),
 	exec = require('child_process').exec,
 	tmpl = require('handlebars'),
@@ -60,7 +48,7 @@ mcopy.command = function () {
 	Initialize App
 *******/
 mcopy.init = function () {
-	
+
 	mcopy.tests(mcopy.command); //checks for user commands, otherwise launches main app
 };
 mcopy.run = function () {
@@ -110,7 +98,7 @@ mcopy.arduino.build = function () {
 mcopy.arduino.compile = function (path) {
 	console.log('Compiling firmware...');
 	exec('(cd deploy; ino build -m ' + mcopy.cfg.arduino.board + ' -v)', function (e, std) {
-		if (e) { 
+		if (e) {
 			console.log('Error compiling :(');
 			return console.log(e);
 		}
@@ -122,7 +110,7 @@ mcopy.arduino.compile = function (path) {
 mcopy.arduino.upload = function (path) {
 	console.log('Uploading to arduino...');
 	exec('(cd deploy; ino upload -m ' + mcopy.cfg.arduino.board + ')', function (e, std) {
-		if (e) { 
+		if (e) {
 			console.log('Error uploading :(');
 			return console.log(e);
 		}

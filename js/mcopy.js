@@ -1,12 +1,12 @@
 /*
-__/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____/\\\________/\\\_        
- _\/\\\\\\________/\\\\\\_____/\\\////////______/\\\///\\\____\/\\\/////////\\\_\///\\\____/\\\/__       
-  _\/\\\//\\\____/\\\//\\\___/\\\/_____________/\\\/__\///\\\__\/\\\_______\/\\\___\///\\\/\\\/____      
-   _\/\\\\///\\\/\\\/_\/\\\__/\\\______________/\\\______\//\\\_\/\\\\\\\\\\\\\/______\///\\\/______     
-	_\/\\\__\///\\\/___\/\\\_\/\\\_____________\/\\\_______\/\\\_\/\\\/////////__________\/\\\_______    
-	 _\/\\\____\///_____\/\\\_\//\\\____________\//\\\______/\\\__\/\\\___________________\/\\\_______   
-	  _\/\\\_____________\/\\\__\///\\\___________\///\\\__/\\\____\/\\\___________________\/\\\_______  
-	   _\/\\\_____________\/\\\____\////\\\\\\\\\____\///\\\\\/_____\/\\\___________________\/\\\_______ 
+__/\\\\____________/\\\\________/\\\\\\\\\_______/\\\\\_______/\\\\\\\\\\\\\____/\\\________/\\\_
+ _\/\\\\\\________/\\\\\\_____/\\\////////______/\\\///\\\____\/\\\/////////\\\_\///\\\____/\\\/__
+  _\/\\\//\\\____/\\\//\\\___/\\\/_____________/\\\/__\///\\\__\/\\\_______\/\\\___\///\\\/\\\/____
+   _\/\\\\///\\\/\\\/_\/\\\__/\\\______________/\\\______\//\\\_\/\\\\\\\\\\\\\/______\///\\\/______
+	_\/\\\__\///\\\/___\/\\\_\/\\\_____________\/\\\_______\/\\\_\/\\\/////////__________\/\\\_______
+	 _\/\\\____\///_____\/\\\_\//\\\____________\//\\\______/\\\__\/\\\___________________\/\\\_______
+	  _\/\\\_____________\/\\\__\///\\\___________\///\\\__/\\\____\/\\\___________________\/\\\_______
+	   _\/\\\_____________\/\\\____\////\\\\\\\\\____\///\\\\\/_____\/\\\___________________\/\\\_______
 		_\///______________\///________\/////////_______\/////_______\///___by m mcwilliams__\///________
 */
 
@@ -18,14 +18,26 @@ var fs = require('fs'),
 	humanizeDuration = require("humanize-duration"),
 	moment = require('moment'),
 	uuid = require('node-uuid'),
-	sp = require('serialport'),
-	SerialPort = sp.SerialPort,
+	sp,
+	SerialPort,
 	express = {},
 	app = {},
 	mcopy = {};
 
-mcopy.cfgFile = 'cfg.json';
-mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
+mcopy.cfg = {};
+mcopy.cfgFile = './data/cfg.json';
+mcopy.cfgInit = function () {
+	if (!fs.existsSync(mcopy.cfgFile)) {
+		mcopy.log('Using default configuration...');
+		fs.writeFileSync(mcopy.cfgFile, fs.readFileSync('./data/cfg.json.default'));
+	}
+	mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
+};
+mcopy.cfgStore = function () {
+	var data = JSON.stringify(mcopy.cfg);
+	fs.writeFileSync(mcopy.cfgFile, data, 'utf8');
+};
+
 mcopy.editor = {};
 
 mcopy.exec = function (cmd, callback, error) {
@@ -78,6 +90,7 @@ mcopy.notify = function (title, message) {
 *******/
 mcopy.init = function () {
 	mcopy.log('Starting mcopy...');
+	mcopy.cfgInit();
 	mcopy.bindings();
 	mcopy.tests(function () {
 		process.on('uncaughtException', function (err, a, b) {
@@ -97,7 +110,7 @@ mcopy.init = function () {
 			if (!success) { return mcopy.gui.init(); }
 			mcopy.arduino.connect(mcopy.gui.init);
 		});
-  
+
 	});
 };
 /******
@@ -108,7 +121,7 @@ mcopy.state = {
 	camera : {
 		pos : 0,
 		direction: true
-	}, 
+	},
 	projector : {
 		pos : 0,
 		direction: true
@@ -126,7 +139,6 @@ mcopy.state = {
 			cam_forward: 'CF',
 			proj_forward : 'PF',
 			black_forward : 'BF',
-
 			cam_backward: 'CB',
 			proj_backward : 'PB',
 			black_backward : 'BB'
@@ -182,10 +194,23 @@ mcopy.tests = function (callback) {
 	if (mcopy.arg('-m', '--mobile')) {
 		mcopy.log('Mobile mode enabled');
 	}
+	//tests if serialport is configured for node-webkit
+	try {
+		sp = require('serialport');
+	} catch (e) {
+		console.dir(e);
+	}
+
+	//SerialPort = sp.SerialPort;
+
+	/*
+
+	ino not used in mcopy... yet
+
 	exec('ino -h', function (e1,std1) {
 		if (e1) { return mcopy.log('Problem with ino, check install', 0); }
 		if (callback) { callback(); }
-	})
+	})*/
 };
 
 /******
@@ -194,9 +219,9 @@ mcopy.tests = function (callback) {
 mcopy.arduino = {
 	path : '',
 	known: [
-		'/dev/tty.usbmodem1a161', 
-		'/dev/tty.usbserial-A800f8dk', 
-		'/dev/tty.usbserial-A900cebm', 
+		'/dev/tty.usbmodem1a161',
+		'/dev/tty.usbserial-A800f8dk',
+		'/dev/tty.usbserial-A900cebm',
 		'/dev/tty.usbmodem1a131',
 		'/dev/tty.usbserial-a900f6de',
 		'/dev/tty.usbmodem1a141'
@@ -415,7 +440,7 @@ mcopy.cmd.black_forward = function (callback) {
 			//black
 			mcopy.arduino.send(mcopy.cfg.arduino.cmd.black, res);
 		}, mcopy.cfg.arduino.serialDelay);
-	}	
+	}
 };
 mcopy.cmd.black_backward = function (callback) {
 	var res = function (ms) {
@@ -457,10 +482,10 @@ mcopy.seq.run = function () {
 			}, mcopy.cfg.arduino.sequenceDelay);
 		},
 		timeEnd = 0;
-	if (mcopy.seq.stop()) { 
+	if (mcopy.seq.stop()) {
 		$('.row input').removeClass('h');
 		mcopy.log('Sequence stepped');
-		return false; 
+		return false;
 	}
 	if (mcopy.seq.i <= mcopy.state.sequence.arr.length && cmd !== undefined) {
 		mcopy.log('Sequence step ' + mcopy.seq.i + ' command ' + cmd + '...');
@@ -472,13 +497,13 @@ mcopy.seq.run = function () {
 		} else if (cmd === 'CB') {
 			mcopy.cmd.cam_backward(action);
 		} else if (cmd === 'PF') {
-			mcopy.cmd.proj_forward(action);			
+			mcopy.cmd.proj_forward(action);
 		} else if (cmd === 'PB') {
-			mcopy.cmd.proj_backward(action);			
+			mcopy.cmd.proj_backward(action);
 		} else if (cmd === 'BF') {
-			mcopy.cmd.black_forward(action);			
+			mcopy.cmd.black_forward(action);
 		} else if (cmd === 'BB') {
-			mcopy.cmd.black_backward(action);			
+			mcopy.cmd.black_backward(action);
 		}
 	} else {
 		mcopy.loopCount++;
@@ -513,8 +538,8 @@ mcopy.seq.stop = function (state) {
 	}
 };
 mcopy.seq.init = function (start) {
-	if (typeof start === 'undefined') { 
-		start = 0; 
+	if (typeof start === 'undefined') {
+		start = 0;
 		mcopy.loopCount = 0;
 		mcopy.seq_time = +new Date();
 	}
@@ -595,7 +620,7 @@ mcopy.seq.clear = function () {
 };
 
 /******
-	GUI Object 
+	GUI Object
 *******/
 mcopy.gui = {};
 mcopy.gui.spinner = function (state) {
@@ -712,7 +737,7 @@ mcopy.gui.grid.refresh = function () {
 		}
 		for (var x = 0; x < mcopy.state.sequence.size; x++) {
 			check = '<input type="checkbox" x="xxxx" />'.replace('xxxx', x);
-			
+
 			if (i === cmds.length - 1) {
 				$('#' + cmds[i]).append($('<div>').append($(check).addClass(mcopy.state.sequence.pads[cmds[i]])).append($('<div>').text(x)));
 			} else {
@@ -928,7 +953,7 @@ mcopy.gui.trad.name_val = function (n, v) {
 	var radios = $('#trad_loop input[type=radio]'),
 		out;
 	radios.each(function () {
-		if ($(this).val() === v 
+		if ($(this).val() === v
 			&& $(this).attr('name') === n) {
 			out = $(this);
 		}
@@ -1115,10 +1140,10 @@ mcopy.gui.trad.run = function () {
 			}, mcopy.cfg.arduino.sequenceDelay);
 		},
 		timeEnd;
-	if (mcopy.gui.trad.seqStop) { 
+	if (mcopy.gui.trad.seqStop) {
 		mcopy.gui.trad.log('Stopped');
 		mcopy.log('Sequence stopped');
-		return false; 
+		return false;
 	}
 	if (mcopy.gui.trad.seqCount <= mcopy.gui.trad.seq.length && cmd !== undefined) {
 		mcopy.gui.trad.log(mcopy.gui.trad.seqCount + ' : ' + cmd);
@@ -1128,13 +1153,13 @@ mcopy.gui.trad.run = function () {
 		} else if (cmd === 'CB') {
 			mcopy.cmd.cam_backward(action);
 		} else if (cmd === 'PF') {
-			mcopy.cmd.proj_forward(action);			
+			mcopy.cmd.proj_forward(action);
 		} else if (cmd === 'PB') {
-			mcopy.cmd.proj_backward(action);			
+			mcopy.cmd.proj_backward(action);
 		} else if (cmd === 'BF') {
-			mcopy.cmd.black_forward(action);			
+			mcopy.cmd.black_forward(action);
 		} else if (cmd === 'BB') {
-			mcopy.cmd.black_backward(action);			
+			mcopy.cmd.black_backward(action);
 		}
 	} else {
 		mcopy.log('Sequence completed!');
@@ -1281,7 +1306,7 @@ mcopy.mobile.init = function () {
 	express = require('express');
 	app = express(),
 	ip = mcopy.mobile.getIp();
-	
+
 
 	app.get('/', function (req, res) {
 		mcopy.mobile.log('Device connected');
