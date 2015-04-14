@@ -192,7 +192,7 @@ mcopy.local = function (key, value) {
     }
 };
 mcopy.tests = function (callback) {
-	var str, release;
+	var str, release, parts, targetDir, source, cmd;
 	if (mcopy.arg('-m', '--mobile')) {
 		mcopy.log('Mobile mode enabled');
 	}
@@ -202,17 +202,26 @@ mcopy.tests = function (callback) {
 	} catch (e) {
 		if (e.code === 'MODULE_NOT_FOUND') {
 			str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
-			console.log(str);
+			parts = str.split('/');
 			release = str.split('/Release/')[0] + '/Release/';
 			mcopy.exec('ls ' + release, function (list) {
 				list = list.split('\n');
 				list.pop();
-				console.log(list);
+				source = release + list[0] + '/' + parts[parts.length - 1];
+				targetDir = parts[parts.length - 2];
+				conf = confirm('Duplicating serialport release "' + list[0] + '" as "' + targetDir + '". Proceed?');
+				if (conf) {
+					mcopy.log('Duplicating serialport...');
+					cmd = 'mkdir -p "' + release + targetDir + '"; cp "' + source + '" "' + str + '"';
+					mcopy.exec(cmd, function (data) {
+						alert('Files copied successfully. App will now shut down. Please relaunch.');
+						process.exit();
+					});
+				}
 			});
 		}
 	}
-
-	//SerialPort = sp.SerialPort;
+	SerialPort = sp.SerialPort;
 
 	/*
 
@@ -1200,6 +1209,7 @@ mcopy.gui.mscript.data = {};
 mcopy.gui.mscript.raw = '';
 mcopy.gui.mscript.last = '';
 mcopy.gui.mscript.init = function () {
+	mcopy.log('Initializing mscript CodeMirror GUI...')
 	mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
 		lineNumbers: true,
 		mode: "text/html",
