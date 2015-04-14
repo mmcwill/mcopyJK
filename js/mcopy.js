@@ -116,38 +116,39 @@ mcopy.init = function () {
 /******
 	State shared by ALL interfaces
 *******/
-mcopy.state = {
-	version : 'alpha', //use for file compatibility check
-	camera : {
-		pos : 0,
-		direction: true
-	},
-	projector : {
-		pos : 0,
-		direction: true
-	},
-	sequence : {
-		size : 24,
-		arr : ['CF', 'PF'],
-		cmd : {
-			camera: mcopy.cfg.arduino.cmd.camera,
-			projector: mcopy.cfg.arduino.cmd.projector,
-			cam_direction: mcopy.cfg.arduino.cmd.cam_direction,
-			cam_direction: mcopy.cfg.arduino.cmd.proj_direction
-		},
-		pads: {
-			cam_forward: 'CF',
-			proj_forward : 'PF',
-			black_forward : 'BF',
-			cam_backward: 'CB',
-			proj_backward : 'PB',
-			black_backward : 'BB'
-		}
-	},
-	mode : 'trad'
-};
+mcopy.state = {};
 mcopy.stateinit = function () {
 	mcopy.log('Initializing state...');
+	mcopy.state = {
+		version : 'alpha', //use for file compatibility check
+		camera : {
+			pos : 0,
+			direction: true
+		},
+		projector : {
+			pos : 0,
+			direction: true
+		},
+		sequence : {
+			size : 24,
+			arr : ['CF', 'PF'],
+			cmd : {
+				camera: mcopy.cfg.arduino.cmd.camera,
+				projector: mcopy.cfg.arduino.cmd.projector,
+				cam_direction: mcopy.cfg.arduino.cmd.cam_direction,
+				cam_direction: mcopy.cfg.arduino.cmd.proj_direction
+			},
+			pads: {
+				cam_forward: 'CF',
+				proj_forward : 'PF',
+				black_forward : 'BF',
+				cam_backward: 'CB',
+				proj_backward : 'PB',
+				black_backward : 'BB'
+			}
+		},
+		mode : 'trad'
+	};
 	mcopy.state.package = JSON.parse(fs.readFileSync('package.json', 'utf8')); //for verifying the file format
 	mcopy.state.cfg = mcopy.cfg; //for verifying the file format
 	mcopy.state.program_start = +new Date();
@@ -191,6 +192,7 @@ mcopy.local = function (key, value) {
     }
 };
 mcopy.tests = function (callback) {
+	var str, release;
 	if (mcopy.arg('-m', '--mobile')) {
 		mcopy.log('Mobile mode enabled');
 	}
@@ -198,7 +200,16 @@ mcopy.tests = function (callback) {
 	try {
 		sp = require('serialport');
 	} catch (e) {
-		console.dir(e);
+		if (e.code === 'MODULE_NOT_FOUND') {
+			str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
+			console.log(str);
+			release = str.split('/Release/')[0] + '/Release/';
+			mcopy.exec('ls ' + release, function (list) {
+				list = list.split('\n');
+				list.pop();
+				console.log(list);
+			});
+		}
 	}
 
 	//SerialPort = sp.SerialPort;
