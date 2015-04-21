@@ -1290,21 +1290,29 @@ mcopy.gui.mscript.parse = function (str) {
 };
 mcopy.gui.mscript.generate = function () {
 	var script = '',
-		seq = mcopy.state.sequence.arr,
-		last = null,
-		count = 0;
-	for (var i = 0; i < seq.length; i++) {
-		if (seq[i] === last) {
-			count++;
-		} else {
-			script += seq[i];
-			if (count !== 0 && seq[i + 1] !== seq[i]) {
-				script += count + '\n';
-			}
+			last = '',
 			count = 0;
-		}
+	for (var i = 0; i < seq.length; i++) {
+			if (last !== seq[i] && i !== 0) {
+					if (count !== 1) {
+							script += last + count + '\n';
+					} else {
+							script += last + '\n';
+					}
+					count = 1;
+			} else {
+					count++;
+			}
 
-		last = seq[i];
+			if (i === seq.length - 1) {
+					if (count !== 1) {
+							script += seq[i] + count + '\n';
+					} else {
+							script += seq[i] + '\n';
+					}
+			}
+
+			last = seq[i];
 	}
 
 	mcopy.editor.setValue(script);
