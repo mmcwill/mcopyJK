@@ -223,6 +223,8 @@ mcopy.tests = function (callback) {
 					process.exit();
 				}
 			});
+		} else {
+			console.error(e);
 		}
 	}
 	SerialPort = sp.SerialPort;
