@@ -20,7 +20,7 @@ mcopy.cfg = JSON.parse(fs.readFileSync(mcopy.cfgFile, 'utf8'));
 mcopy.tests = function (callback) {
 	var cmd = 'ino -h';
 	exec(cmd, function (e, std) {
-		if (e) { return console.log("There's a problem with your ino install"); }
+		if (e) { console.log("There's a problem with your ino install"); }
 		if (callback) { callback (); }
 	});
 };

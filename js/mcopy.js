@@ -353,7 +353,12 @@ mcopy.arduino.fakeConnect = function (callback) {
 		}
 	};
 	if (callback) callback();
-}
+};
+
+mcopy.arduino.miniConnect = function () {
+	//sudo apt-get install minicom
+	//sudo minicom -D /dev/ttyACM0 -b 9600
+};
 
 mcopy.arduino.tests = function () {
 	//var keys = Object.keys(mcopy.cfg.arduino.cmd);
