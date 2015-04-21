@@ -1,5 +1,6 @@
 {
 	"version" : "0.1.0",
+	"nodewebkit" : "nodewebkit",
 	"ext_port" : 1111,
 	"arduino" : {
 		"baud" : 57600,

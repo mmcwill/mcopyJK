@@ -56,7 +56,8 @@ mcopy.init = function () {
 };
 mcopy.run = function () {
 	var flags = '',
-		cmd = '(cd ..; nodewebkit mcopyJK';
+		nwcmd = mcopy.cfg.nodewebkit,
+		cmd = '(cd ..; ' + nwcmd + ' mcopyJK';
 	if (process.argv.length > 3) {
 		for (var i = 3; i < process.argv.length; i++) {
 			cmd += ' ' + process.argv[i];
