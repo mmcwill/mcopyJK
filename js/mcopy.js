@@ -1295,7 +1295,7 @@ mcopy.gui.mscript.generate = function (seq) {
 	for (var i = 0; i < seq.length; i++) {
 			if (last !== seq[i] && i !== 0) {
 					if (count !== 1) {
-							script += last + count + '\n';
+							script += last + ' ' + count + '\n';
 					} else {
 							script += last + '\n';
 					}
@@ -1306,9 +1306,9 @@ mcopy.gui.mscript.generate = function (seq) {
 
 			if (i === seq.length - 1) {
 					if (count !== 1) {
-							script += seq[i] + count + '\n';
+							script += seq[i] + ' ' + count;
 					} else {
-							script += seq[i] + '\n';
+							script += seq[i] ;
 					}
 			}
 
