@@ -194,7 +194,14 @@ mcopy.stateinit = function () {
 	//
 };
 mcopy.tests = function (callback) {
-	var str, release, parts, targetDir, source, cmd;
+	var str, release, parts, targetDir, source, cmd, bypass = true,
+	inoCheck = function () {
+		//ino not used in mcopy... yet
+		exec('ino -h', function (e1,std1) {
+			if (e1) { mcopy.log('Problem with ino, check install', 0); }
+			if (callback) { callback(); }
+		});
+	};
 	if (mcopy.arg('-m', '--mobile')) {
 		mcopy.log('Mobile mode enabled');
 	}
@@ -202,6 +209,7 @@ mcopy.tests = function (callback) {
 	try {
 		sp = require('serialport');
 	} catch (e) {
+		bypass = false;
 		if (e.code === 'MODULE_NOT_FOUND') {
 			str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
 			parts = str.split('/');
@@ -216,24 +224,25 @@ mcopy.tests = function (callback) {
 					mcopy.log('Duplicating serialport...');
 					cmd = 'mkdir -p "' + release + targetDir + '"; cp "' + source + '" "' + str + '"';
 					mcopy.exec(cmd, function (data) {
-						alert('Files copied successfully. App will now shut down. Please relaunch.');
-						process.exit();
+						alert('Files copied successfully.');
+						SerialPort = sp.SerialPort;
+						inoCheck();
 					});
 				} else {
 					//process.exit();
+					inoCheck();
 				}
 			});
 		} else {
 			console.error(e);
+			inoCheck();
 		}
 	}
-	SerialPort = sp.SerialPort;
+	if (bypass) {
+		SerialPort = sp.SerialPort;
+		inoCheck();
+	}
 
-	//ino not used in mcopy... yet
-	exec('ino -h', function (e1,std1) {
-		if (e1) { mcopy.log('Problem with ino, check install', 0); }
-		if (callback) { callback(); }
-	});
 };
 
 /******
