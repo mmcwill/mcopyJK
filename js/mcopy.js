@@ -78,6 +78,7 @@ mcopy.fmtZero = function (val, len) {
 mcopy.notify = function (title, message) {
 	//osascript -e 'display notification "Lorem ipsum dolor sit amet" with title "Title"'
 	//Todo: fix icon (maybe write script to file, change icon, evaluate applescript)
+	if (os.platform() !== 'darwin') return false;
 	title = title.replace(new RegExp("'", 'g'), '');
 	message = message.replace(new RegExp("'", 'g'), '');
 	var str = 'display notification "' + message + '" with title "' + title + '"',
