@@ -220,7 +220,7 @@ mcopy.tests = function (callback) {
 						process.exit();
 					});
 				} else {
-					process.exit();
+					//process.exit();
 				}
 			});
 		} else {
@@ -231,7 +231,7 @@ mcopy.tests = function (callback) {
 
 	//ino not used in mcopy... yet
 	exec('ino -h', function (e1,std1) {
-		if (e1) { return mcopy.log('Problem with ino, check install', 0); }
+		if (e1) { mcopy.log('Problem with ino, check install', 0); }
 		if (callback) { callback(); }
 	});
 };
