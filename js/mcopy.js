@@ -1288,7 +1288,7 @@ mcopy.gui.mscript.parse = function (str) {
 		mcopy.gui.mscript.data = JSON.parse(data);
 	});
 };
-mcopy.gui.mscript.generate = function () {
+mcopy.gui.mscript.generate = function (seq) {
 	var script = '',
 			last = '',
 			count = 0;

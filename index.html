@@ -72,7 +72,7 @@
 				</div>
 				<div class="onoff alt_mode">
 					<form>
-						<div><label>ALT MODE </label> 
+						<div><label>ALT MODE </label>
 							<span>ON </span>
 							<input type="radio" name="alt_mode" value="on" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<input type="radio" name="alt_mode" value="off" onchange="mcopy.gui.trad.changeSeqMode(this);" />
@@ -83,7 +83,7 @@
 				<div class="onoff step_mode">
 					<form>
 						<div>
-							<label>STEP MODE </label> 
+							<label>STEP MODE </label>
 							<span>ON </span>
 							<input type="radio" name="step_mode" value="on" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<input type="radio" name="step_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
@@ -94,7 +94,7 @@
 				<div class="onoff skip_mode">
 					<form>
 						<div>
-							<label>SKIP MODE </label> 
+							<label>SKIP MODE </label>
 							<span>ON </span>
 							<input type="radio" name="skip_mode" value="on" onchange="mcopy.gui.trad.changeSeqMode(this);" />
 							<input type="radio" name="skip_mode" value="off" checked="true" onchange="mcopy.gui.trad.changeSeqMode(this);" />
@@ -164,7 +164,7 @@
 			<button id="seq_stop" onclick="mcopy.seq.stop(true);">STOP</button>
 			<button id="seq_clear" onclick="mcopy.gui.grid.clear();">CLEAR</button>
 			<button id="seq_plus24" onclick="mcopy.gui.grid.plus_24();">+ 24</button>
-			<button id="seq_mscript" onclick="mcopy.gui.mscript.generate();">TO SCRIPT</button>
+			<button id="seq_mscript" onclick="mcopy.gui.mscript.generate(mcopy.state.sequence.arr);">TO SCRIPT</button>
 		</div>
 		<div id="seq_loop">
 			<h3>LOOPS</h3>
