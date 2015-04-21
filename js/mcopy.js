@@ -134,6 +134,7 @@ mcopy.init = function () {
     		console.dir(err);
     		mcopy.log(a, 0);
 		});
+		win.enterFullscreen();
 		mcopy.gui.menu();
 		mcopy.gui.mscript.init();
 		mcopy.gui.overlay(true);
