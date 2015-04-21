@@ -84,6 +84,42 @@ mcopy.notify = function (title, message) {
 		cmd = "osascript -e '" + str + "';";
 	mcopy.exec(cmd);
 };
+mcopy.log = function (txt, status) {
+	$('#source').text('> ' + txt).attr('class', '');
+	console.log(txt);
+	if (status === 0) {
+		$('#source').addClass('error');
+	} else if (status === 1) {
+		$('#source').addClass('success');
+	}
+};
+mcopy.local = function (key, value) {
+    var has = function () {
+        try {
+            return 'localStorage' in window && window['localStorage'] !== null;
+        } catch (e) {
+            return false;
+        }
+    };
+    if (value === undefined) {
+        if (has()) {
+            var val = window['localStorage'][key];
+            if (val !== undefined) {
+                val = JSON.parse(val);
+            }
+            return val;
+        } else {
+            return undefined;
+        }
+    } else {
+        if (has()) {
+            window['localStorage'][key] = JSON.stringify(value);
+            return true;
+        } else {
+            return false;
+        }
+    }
+};
 
 /******
 	Initialize mcopy
@@ -95,7 +131,7 @@ mcopy.init = function () {
 	mcopy.tests(function () {
 		process.on('uncaughtException', function (err, a, b) {
     		console.dir(err);
-    		console.log(a);
+    		mcopy.log(a, 0);
 		});
 		mcopy.gui.menu();
 		mcopy.gui.mscript.init();
@@ -107,7 +143,9 @@ mcopy.init = function () {
 	    	mcopy.mobile.toggle();
 	    }
 		mcopy.arduino.init(function (success) {
-			if (!success) { return mcopy.gui.init(); }
+			if (!success) {
+				return mcopy.arduino.fakeConnect(mcopy.gui.init);
+			}
 			mcopy.arduino.connect(mcopy.gui.init);
 		});
 
@@ -155,42 +193,6 @@ mcopy.stateinit = function () {
 	mcopy.local('state', mcopy.state);
 	//
 };
-mcopy.log = function (txt, status) {
-	$('#source').text('> ' + txt).attr('class', '');
-	console.log(txt);
-	if (status === 0) {
-		$('#source').addClass('error');
-	} else if (status === 1) {
-		$('#source').addClass('success');
-	}
-};
-mcopy.local = function (key, value) {
-    var has = function () {
-        try {
-            return 'localStorage' in window && window['localStorage'] !== null;
-        } catch (e) {
-            return false;
-        }
-    };
-    if (value === undefined) {
-        if (has()) {
-            var val = window['localStorage'][key];
-            if (val !== undefined) {
-                val = JSON.parse(val);
-            }
-            return val;
-        } else {
-            return undefined;
-        }
-    } else {
-        if (has()) {
-            window['localStorage'][key] = JSON.stringify(value);
-            return true;
-        } else {
-            return false;
-        }
-    }
-};
 mcopy.tests = function (callback) {
 	var str, release, parts, targetDir, source, cmd;
 	if (mcopy.arg('-m', '--mobile')) {
@@ -217,20 +219,19 @@ mcopy.tests = function (callback) {
 						alert('Files copied successfully. App will now shut down. Please relaunch.');
 						process.exit();
 					});
+				} else {
+					process.exit();
 				}
 			});
 		}
 	}
 	SerialPort = sp.SerialPort;
 
-	/*
-
-	ino not used in mcopy... yet
-
+	//ino not used in mcopy... yet
 	exec('ino -h', function (e1,std1) {
 		if (e1) { return mcopy.log('Problem with ino, check install', 0); }
 		if (callback) { callback(); }
-	})*/
+	});
 };
 
 /******
@@ -287,7 +288,7 @@ mcopy.arduino.send = function (cmd, res) {
 			mcopy.arduino.serial.write(cmd, function (err, results) {
 				if (err) { mcopy.log(err, 0); }
 				mcopy.arduino.lock = false;
-				mcopy.arduino.timer = new Date().getTime();
+				mcopy.arduino.timer = +new Date();
 			});
 		}, mcopy.cfg.arduino.serialDelay);
 	}
@@ -333,6 +334,27 @@ mcopy.arduino.connect = function (callback) {
 		}
 	});
 };
+
+mcopy.arduino.fakeConnect = function (callback) {
+	mcopy.log('Connecting to fake arduino...');
+	mcopy.state.arduino = '/dev/null';
+	mcopy.arduino.serial = {
+		write : function (cmd, res) {
+			var t = {
+				c : mcopy.cfg.arduino.cam.time + mcopy.cfg.arduino.cam.delay,
+				p : mcopy.cfg.arduino.proj.time + mcopy.cfg.arduino.proj.delay
+			},
+			timeout = t[cmd];
+			if (typeof timeout === 'undefined') timeout = 500;
+			mcopy.arduino.timer = +new Date();
+			setTimeout(function () {
+				mcopy.arduino.end(cmd);
+			}, timeout);
+		}
+	};
+	if (callback) callback();
+}
+
 mcopy.arduino.tests = function () {
 	//var keys = Object.keys(mcopy.cfg.arduino.cmd);
 	//for (var i = 0; i < keys.length; i++) {
@@ -719,6 +741,7 @@ mcopy.gui.overlay = function (state) {
 	}
 };
 mcopy.gui.menu = function () {
+	mcopy.log('Initializing native GUI menu...');
 	var menu = new gui.Menu({type:"menubar"});
 	if (process.platform === "darwin") {
 		menu.createMacBuiltin("mcopy");
@@ -1209,7 +1232,7 @@ mcopy.gui.mscript.data = {};
 mcopy.gui.mscript.raw = '';
 mcopy.gui.mscript.last = '';
 mcopy.gui.mscript.init = function () {
-	mcopy.log('Initializing mscript CodeMirror GUI...')
+	mcopy.log('Initializing mscript CodeMirror GUI...');
 	mcopy.editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
 		lineNumbers: true,
 		mode: "text/html",
@@ -1249,8 +1272,23 @@ mcopy.gui.mscript.parse = function (str) {
 };
 mcopy.gui.mscript.generate = function () {
 	var script = '',
-		seq = mcopy.state.sequence.arr;
-	script = seq.join('\n');
+		seq = mcopy.state.sequence.arr,
+		last = null,
+		count = 0;
+	for (var i = 0; i < seq.length; i++) {
+		if (seq[i] === last) {
+			count++;
+		} else {
+			script += seq[i];
+			if (count !== 0 && seq[i + 1] !== seq[i]) {
+				script += count + '\n';
+			}
+			count = 0;
+		}
+
+		last = seq[i];
+	}
+
 	mcopy.editor.setValue(script);
 	$('#nav_script').click();
 };
