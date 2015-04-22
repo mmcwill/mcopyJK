@@ -1311,8 +1311,12 @@ mcopy.gui.mscript.generate = function (seq) {
 							script += seq[i] ;
 					}
 			}
-
 			last = seq[i];
+	}
+
+	if (mcopy.loop > 1) {
+		script = 'LOOP ' + mcopy.loop + '\n' + script;
+		script += '\nEND LOOP';
 	}
 
 	mcopy.editor.setValue(script);
