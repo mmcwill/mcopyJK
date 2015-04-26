@@ -85,9 +85,10 @@ i{
 	color: #666;
 	.helvetica();
 	font-weight: 100;
+
 	i{
 		float: right;
-		margin: 3px 10px;
+		margin: 2px 10px;
 		&.active{
 			color: @SELECTED !important;
 			text-shadow: 0 0 4px @SELECTED;
@@ -104,6 +105,8 @@ i{
 	left: 0;
 	right: 0;
 	background: rgba(255, 255, 255, 0.2);
+	height: 15px;
+  	line-height: 18px;
 	&.error{
 		color: @BACKWARD;
 	}
@@ -113,23 +116,33 @@ i{
 #views{
 	position: fixed;
 	z-index: 100;
+	top: 5px;
 	right: 0;
-	bottom: 60px;
+	left: 0;
+  	padding-left: 11px;
+  	//border-bottom: 1px solid @COMMON;
+  	border-bottom: 1px solid #ABABAB;
 	.nav{
 		display: inline-block;
 		width: 100px;
-		height: 30px;
-		line-height: 30px;
-		border: 2px solid @COMMON;
-		border-radius: 4px;
-		margin-right: 15px;
-		color: @COMMON;
+		height: 22px;
+		font-size: 13px;
+		line-height: 21px;
+		border: 1px solid #ABABAB;
+		//border: 1px solid @COMMON;
+		border-radius: 4px 4px 0 0;
+		margin-right: 0px;
+		//color: @COMMON;
+		color: #ABABAB;
 		text-align: center;
 		cursor: pointer;
 		.helvetica();
+		border-bottom: 0;
+		background: rgba(0, 0, 0, 0.2);
 		&.current{
 			color: @BG;
 			background: @COMMON;
+			border-color: @COMMON;
 		}
 	}
 }
@@ -293,6 +306,7 @@ i{
 #sequencer{
 	display: none;
 	.helvetica();
+	padding-top: 25px;
 	#counters{
 		.cam,.proj{
 			width: 50%;
