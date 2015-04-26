@@ -1,30 +1,30 @@
-//ino/mcopy_jk_1415033188406.ino
+//ino/mcopy_jk_1430084257123.ino
 #include <Servo.h> 
  
+boolean debug_state = false;
+
+const int indicator_pin = 13;
+
 Servo black;
 const int black_pin = 10;
 const int black_start = 120;
 const int black_stop = 7;
 
-boolean debug_state = false;
-
-const int cam_pin = 13;//4;
-boolean cam_dir = true; //setDir in setup
-const int cam_time = 1000;
+const int cam_pin = 4; //relay 8
+const int cam_time = 750;
 const int cam_delay = 50;
-const int cam_momentary = 200;
+const int cam_momentary = 300;
 
-const int cam_dir_1 = 6; //left
-const int cam_dir_2 = 7; //right
+boolean cam_dir = true; //relay defaults to forward
+const int cam_dir_1 = 6; //relay 7
 
-const int proj_pin = 13;//5;
-boolean proj_dir = true; //setDir in setup
-const int proj_time = 1000;
+const int proj_pin = 5; //relay 4
+const int proj_time = 1300;
 const int proj_delay = 50;
-const int proj_momentary = 200;
+const int proj_momentary = 300;
 
-const int proj_dir_1 = 8; //left
-const int proj_dir_2 = 9; //right
+boolean proj_dir = true; //relay defaults to forward
+const int proj_dir_1 = 7; //relay 3
 
 char cmd_char = 'z'; //buffer for input value, never use z
 const char cmd_debug = 'd';
@@ -40,15 +40,14 @@ const char cmd_proj_backward = 'h';
 void setup () {
   pinMode(cam_pin, OUTPUT);
   pinMode(proj_pin, OUTPUT);
+  pinMode(cam_dir_1, OUTPUT);
+  pinMode(proj_dir_1, OUTPUT);
   black.attach(black_pin, 1000, 2000);
 
-
-  pinMode(cam_dir_1, OUTPUT);
-  pinMode(cam_dir_2, OUTPUT);
-  setDir("cam", true);
-  pinMode(proj_dir_1, OUTPUT);
-  pinMode(proj_dir_2, OUTPUT);
-  setDir("proj", true);
+  digitalWrite(cam_pin, HIGH);
+  digitalWrite(proj_pin, HIGH);
+  cam_direction(true);
+  proj_direction(true);
 
 	Serial.begin(57600);
 	delay(100);
@@ -143,24 +142,20 @@ void setDir (String cp, boolean d) {
   int pin2;
   if (cp == "cam") {
     pin1 = cam_dir_1;
-    pin2 = cam_dir_2;
     cam_dir = d;
   } else if (cp == "proj") {
     pin1 = proj_dir_1;
-    pin2 = proj_dir_2;
     proj_dir = d;
   }
   if (d) {
     digitalWrite(pin1, HIGH);
-    digitalWrite(pin2, HIGH);
   } else {
     digitalWrite(pin1, LOW);
-    digitalWrite(pin2, LOW);
   }
 }
 
 void momentary (int pin, int pause) {
-  digitalWrite(pin, HIGH);
-  delay(pause); //leave pause to be blocking
   digitalWrite(pin, LOW);
+  delay(pause); //leave pause to be blocking
+  digitalWrite(pin, HIGH);
 }

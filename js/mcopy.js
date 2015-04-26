@@ -40,6 +40,11 @@ mcopy.cfgStore = function () {
 
 mcopy.editor = {};
 
+mcopy.sysInfo = function () {
+	console.log('platform: ' + os.platform() + ' v' + os.release());
+	console.log(process.title + ': ' + process.version);
+};
+
 mcopy.exec = function (cmd, callback, error) {
 	var mb = {
 		maxBuffer: 100 * 1024
@@ -79,6 +84,7 @@ mcopy.notify = function (title, message) {
 	//osascript -e 'display notification "Lorem ipsum dolor sit amet" with title "Title"'
 	//Todo: fix icon (maybe write script to file, change icon, evaluate applescript)
 	if (os.platform() !== 'darwin') return false;
+	if (parseInt(os.release()[1]) < 3) return false;
 	title = title.replace(new RegExp("'", 'g'), '');
 	message = message.replace(new RegExp("'", 'g'), '');
 	var str = 'display notification "' + message + '" with title "' + title + '"',
@@ -127,6 +133,7 @@ mcopy.local = function (key, value) {
 *******/
 mcopy.init = function () {
 	mcopy.log('Starting mcopy...');
+	mcopy.sysInfo();
 	mcopy.cfgInit();
 	mcopy.bindings();
 	mcopy.tests(function () {
