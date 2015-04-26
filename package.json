@@ -7,7 +7,7 @@
   "author": {
     "name": "M McWilliams",
     "email": "mmcwilliams@massart.edu",
-    "url": "http://flashfra.me"
+    "url": "http://framerat.com"
   },
   "keywords": [
     "demo",
@@ -28,7 +28,6 @@
     "plugin": true
   },
   "dependencies": {
-    "nodewebkit" : "^0.10.4",
     "express" : "^4.9.7",
     "handlebars" : "^2.0.0",
     "serialport" : "^1.4.6",

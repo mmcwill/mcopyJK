@@ -216,7 +216,7 @@ mcopy.tests = function (callback) {
 			str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
 			parts = str.split('/');
 			release = str.split('/Release/')[0] + '/Release/';
-			mcopy.exec('ls ' + release, function (list) {
+			mcopy.exec('ls "' + release + '"', function (list) {
 				list = list.split('\n');
 				list.pop();
 				source = release + list[0] + '/' + parts[parts.length - 1];
