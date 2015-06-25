@@ -1415,16 +1415,38 @@ mcopy.mobile.init = function () {
 		res.send(fs.readFileSync('js/jquery.js', 'utf8'));
 	});
 	app.get('/cmd/:cmd', function (req, res) {
+		var cmd,
+			success = function (res) {
+				var obj = {
+					success: true, 
+					cmd : cmd,
+					cam : mcopy.state.camera,
+					proj : mcopy.state.projector
+				}
+				res.json(obj);
+			};
 		if (typeof req.params.cmd !== 'undefined') {
-			mcopy.log(req.params.cmd);
+			mcopy.log('Receiving command from mobile: ' + req.params.cmd);
+			cmd = req.params.cmd;
+			if (cmd === 'CF'){
+				mcopy.cmd.cam_forward(success);
+			} else if (cmd === 'CB') {
+				mcopy.cmd.cam_backward(success);
+			} else if (cmd === 'PF') {
+				mcopy.cmd.proj_forward(success);			
+			} else if (cmd === 'PB') {
+				mcopy.cmd.proj_backward(success);			
+			} else {
+				mcopy.mobile.fail(res, 'Command ' + cmd + ' not found');
+			}
 		} else {
-			mcopy.mobile.fail('No command provided');
+			mcopy.mobile.fail(res, 'No command provided');
 		}
 	});
 	app.get('/state', function (req, res) {
 		res.json({
-			camera: mcopy.state.camera,
-			projector: mcopy.state.projector
+			cam: mcopy.state.camera,
+			proj: mcopy.state.projector
 		});
 	});
 	var http = require('http');
