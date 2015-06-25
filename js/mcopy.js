@@ -768,7 +768,8 @@ mcopy.gui.overlay = function (state) {
 mcopy.gui.menu = function () {
 	mcopy.log('Initializing native GUI menu...');
 	var menu = new gui.Menu({type:"menubar"});
-	if (process.platform === "darwin") {
+	if (os.platform() === "darwin" &&
+		parseInt(os.release()[1]) > 2) {
 		menu.createMacBuiltin("mcopy");
 	}
 	gui.Window.get().menu = menu;
