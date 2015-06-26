@@ -9,7 +9,7 @@ arduino.cfgInit = function () {
 	arduino.cfg = JSON.parse(fs.readFileSync(arduino.cfgFile, 'utf8'));
 };
 
-arduino.serial = new SerialPort('/dev/ttyACM0', {
+arduino.serial = new serialport('/dev/ttyACM0', {
   baudrate: mcopy.cfg.arduino.baud,
   parser: sp.parsers.readline("\n")
 });
