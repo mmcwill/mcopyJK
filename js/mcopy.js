@@ -288,7 +288,7 @@ mcopy.arduino = {
 };
 mcopy.arduino.init = function (callback) {
 	mcopy.log('Searching for devices...');
-	var cmd = 'ls /dev/tty.*';
+	var cmd = 'ls /dev/tty*';
 	exec(cmd, function (e, std) {
 		var devices = std.split('\n'),
 			matches = [];
