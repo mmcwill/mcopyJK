@@ -27,19 +27,24 @@ app.get('/connect', function (req, res) {
 	var output = {
 		success: false
 	};
-	if (req.query && arduino.serial === undefined) {
-		arduino.serial = new SerialPort(req.query.path, {
-			baudrate: arduino.cfg.arduino.baud,
-			parser: sp.parsers.readline("\n")
-		});
-		arduino.serial.on('data', function (data) {
-			data = data.replace('\r', '');
-			release(data);
-		});
-		console.log('Successfully connected to ' + req.query.path);
-		output.success = true;
+	if (arduino.serial !== undefined) {
+		arduino.serial.close();
 	}
-	res.json(output);
+	setTimeout(function () {
+		if (req.query) {
+			arduino.serial = new SerialPort(req.query.path, {
+				baudrate: arduino.cfg.arduino.baud,
+				parser: sp.parsers.readline("\n")
+			});
+			arduino.serial.on('data', function (data) {
+				data = data.replace('\r', '');
+				release(data);
+			});
+			console.log('Successfully connected to ' + req.query.path);
+			output.success = true;
+		}
+		res.json(output);
+	}, 200);
 });
 //CMDS
 app.get('/cmd', function (req, res) {

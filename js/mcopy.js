@@ -414,14 +414,11 @@ mcopy.arduino.serverConnect = function (callback) {
 		},
 		error : function (err) {
 			console.error(err);
+			mcopy.log('Make sure arduino server is running');
 			if (callback) callback();
 		}
 	};
-	exec('node arduino.js');
-	setTimeout(function () {
-		$.ajax(obj);
-	}, 2000); //Give server 5 seconds to start up
-	
+	$.ajax(obj);
 };
 
 
