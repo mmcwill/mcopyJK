@@ -159,6 +159,7 @@ mcopy.init = function () {
 				return mcopy.arduino.fakeConnect(mcopy.gui.init);
 			}
 			if (os.platform() === 'linux') {
+				alert('GOT HERE');
 				mcopy.arduino.serverConnect(mcopy.gui.init);
 			} else {
 				mcopy.arduino.connect(mcopy.gui.init);
@@ -371,7 +372,7 @@ mcopy.arduino.connect = function (callback) {
 };
 
 mcopy.arduino.serverConnect = function (callback) {
-	mcopy.log('Connecting to fake arduino...');
+	mcopy.log('Connecting to arduino server...');
 	mcopy.state.arduino = mcopy.arduino.path;
 	mcopy.arduino.server = 'http://localhost:9555/';
 	mcopy.arduino.serial = {
@@ -396,7 +397,7 @@ mcopy.arduino.serverConnect = function (callback) {
 		url : mcopy.arduino.server + 'connect?path=' + mcopy.arduino.path,
 		type: 'GET',
 		dataType : 'json',
-		success : function (data) {
+		success : function (data) { 
 			if (data.success) {
 				mcopy.log('Connected to ' +  mcopy.arduino.path + ' via server!')
 				if (callback) callback();
