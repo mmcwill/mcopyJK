@@ -401,6 +401,7 @@ mcopy.arduino.serverConnect = function (callback) {
 			$.ajax(obj);
 		}
 	};
+
 	var obj = {
 		url : mcopy.arduino.server + 'connect?path=' + mcopy.arduino.path,
 		type: 'GET',
@@ -416,7 +417,11 @@ mcopy.arduino.serverConnect = function (callback) {
 			if (callback) callback();
 		}
 	};
-	$.ajax(obj);
+	exec('node arduino.js');
+	setTimeout(function () {
+		$.ajax(obj);
+	}, 500);
+	
 };
 
 
