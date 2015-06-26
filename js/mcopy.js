@@ -417,10 +417,10 @@ mcopy.arduino.serverConnect = function (callback) {
 			if (callback) callback();
 		}
 	};
-	exec('node arduino.js');
+	exec('(node arduino.js)');
 	setTimeout(function () {
 		$.ajax(obj);
-	}, 500);
+	}, 5000); //Give server 5 seconds to start up
 	
 };
 
