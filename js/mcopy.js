@@ -212,7 +212,13 @@ mcopy.stateinit = function () {
 	//
 };
 mcopy.tests = function (callback) {
-	var str, release, parts, targetDir, source, cmd, bypass = true,
+	var str, 
+	release, 
+	parts, 
+	targetDir, 
+	source, 
+	cmd, 
+	bypass = true,
 	inoCheck = function () {
 		//ino not used in mcopy... yet
 		exec('ino -h', function (e1,std1) {
@@ -258,6 +264,7 @@ mcopy.tests = function (callback) {
 			}
 		}
 	} else {
+		bypass = false;
 		inoCheck();
 	}
 	if (bypass) {
