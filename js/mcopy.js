@@ -327,10 +327,10 @@ mcopy.arduino.send = function (cmd, res) {
 		mcopy.arduino.lock = true;
 		mcopy.arduino.queue[cmd] = res;
 		setTimeout(function () {
+			mcopy.arduino.timer = +new Date();
 			mcopy.arduino.serial.write(cmd, function (err, results) {
 				if (err) { mcopy.log(err, 0); }
 				mcopy.arduino.lock = false;
-				mcopy.arduino.timer = +new Date();
 			});
 		}, mcopy.cfg.arduino.serialDelay);
 	}
