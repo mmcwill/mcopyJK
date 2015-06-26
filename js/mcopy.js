@@ -256,6 +256,8 @@ mcopy.tests = function (callback) {
 				inoCheck();
 			}
 		}
+	} else {
+		inoCheck();
 	}
 	if (bypass) {
 		SerialPort = sp.SerialPort;
