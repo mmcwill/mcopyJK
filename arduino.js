@@ -5,9 +5,8 @@ var arduino = {},
 	arduino = {};
 
 arduino.cfgFile = './data/cfg.json';
-arduino.cfgInit = function () {
-	arduino.cfg = JSON.parse(fs.readFileSync(arduino.cfgFile, 'utf8'));
-};
+arduino.cfg = JSON.parse(fs.readFileSync(arduino.cfgFile, 'utf8'));
+
 
 arduino.serial = new serialport('/dev/ttyACM0', {
   baudrate: arduino.cfg.arduino.baud,
