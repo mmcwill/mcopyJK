@@ -158,10 +158,11 @@ mcopy.init = function () {
 			if (!success) {
 				return mcopy.arduino.fakeConnect(mcopy.gui.init);
 			}
-			if (os.platform() === 'linux') {
-				mcopy.arduino.serverConnect(mcopy.gui.init);
-			} else {
+
+			if (os.platform() === 'darwin') {
 				mcopy.arduino.connect(mcopy.gui.init);
+			} else {
+				mcopy.arduino.serverConnect(mcopy.gui.init);
 			}
 			
 		});
@@ -277,7 +278,8 @@ mcopy.arduino = {
 		'/dev/tty.usbserial-A900cebm',
 		'/dev/tty.usbmodem1a131',
 		'/dev/tty.usbserial-a900f6de',
-		'/dev/tty.usbmodem1a141'
+		'/dev/tty.usbmodem1a141',
+		'/dev/ttyACM0'
 	],
 	serial : {},
 	queue : {},
@@ -294,7 +296,7 @@ mcopy.arduino.init = function (callback) {
 		for (var i = 0; i < devices.length; i++) {
 			if (devices[i].indexOf('usbserial') !== -1
 				|| devices[i].indexOf('usbmodem') !== -1
-				|| devices[i].indexOf('ACM')  !== -1){
+				|| devices[i].indexOf('ACM') !== -1){
 				matches.push(devices[i]);
 			}
 		}
