@@ -8,6 +8,7 @@ var arduino = {},
 
 arduino.cfgFile = './data/cfg.json';
 arduino.cfg = JSON.parse(fs.readFileSync(arduino.cfgFile, 'utf8'));
+arduino.serial = undefined;
 
 console.log('Starting arduino server for mcopyJK (ARM)');
 
@@ -26,7 +27,7 @@ app.get('/connect', function (req, res) {
 	var output = {
 		success: false
 	};
-	if (req.query) {
+	if (req.query && arduino.serial === undefined) {
 		arduino.serial = new SerialPort(req.query.path, {
 			baudrate: arduino.cfg.arduino.baud,
 			parser: sp.parsers.readline("\n")
