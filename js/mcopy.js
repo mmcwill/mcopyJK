@@ -158,7 +158,12 @@ mcopy.init = function () {
 			if (!success) {
 				return mcopy.arduino.fakeConnect(mcopy.gui.init);
 			}
-			mcopy.arduino.connect(mcopy.gui.init);
+			if (os.platform() === 'linux') {
+				mcopy.arduino.serverConnect(mcopy.gui.init);
+			} else {
+				mcopy.arduino.connect(mcopy.gui.init);
+			}
+			
 		});
 
 	});
@@ -218,36 +223,38 @@ mcopy.tests = function (callback) {
 		mcopy.log('Mobile mode enabled');
 	}
 	//tests if serialport is configured for node-webkit
-	try {
-		sp = require('serialport');
-	} catch (e) {
-		bypass = false;
-		if (e.code === 'MODULE_NOT_FOUND') {
-			str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
-			parts = str.split('/');
-			release = str.split('/Release/')[0] + '/Release/';
-			mcopy.exec('ls "' + release + '"', function (list) {
-				list = list.split('\n');
-				list.pop();
-				source = release + list[0] + '/' + parts[parts.length - 1];
-				targetDir = parts[parts.length - 2];
-				conf = confirm('Duplicating serialport release "' + list[0] + '" as "' + targetDir + '". Proceed?');
-				if (conf) {
-					mcopy.log('Duplicating serialport...');
-					cmd = 'mkdir -p "' + release + targetDir + '"; cp "' + source + '" "' + str + '"';
-					mcopy.exec(cmd, function (data) {
-						alert('Files copied successfully.');
-						SerialPort = sp.SerialPort;
+	if (os.platform() === 'darwin') {
+		try {
+			sp = require('serialport');
+		} catch (e) {
+			bypass = false;
+			if (e.code === 'MODULE_NOT_FOUND') {
+				str = e.toString().split("Error: Cannot find module '")[1].split("'")[0].trim();
+				parts = str.split('/');
+				release = str.split('/Release/')[0] + '/Release/';
+				mcopy.exec('ls "' + release + '"', function (list) {
+					list = list.split('\n');
+					list.pop();
+					source = release + list[0] + '/' + parts[parts.length - 1];
+					targetDir = parts[parts.length - 2];
+					conf = confirm('Duplicating serialport release "' + list[0] + '" as "' + targetDir + '". Proceed?');
+					if (conf) {
+						mcopy.log('Duplicating serialport...');
+						cmd = 'mkdir -p "' + release + targetDir + '"; cp "' + source + '" "' + str + '"';
+						mcopy.exec(cmd, function (data) {
+							alert('Files copied successfully.');
+							SerialPort = sp.SerialPort;
+							inoCheck();
+						});
+					} else {
+						//process.exit();
 						inoCheck();
-					});
-				} else {
-					//process.exit();
-					inoCheck();
-				}
-			});
-		} else {
-			console.error(e);
-			inoCheck();
+					}
+				});
+			} else {
+				console.error(e);
+				inoCheck();
+			}
 		}
 	}
 	if (bypass) {
@@ -356,12 +363,56 @@ mcopy.arduino.connect = function (callback) {
 				});
 			}, 2000);
 		}
-	});
+	});	
+	//for ARM Linux, Banana pi
+
 };
 
+mcopy.arduino.serverConnect = function (callback) {
+	mcopy.log('Connecting to fake arduino...');
+	mcopy.state.arduino = mcopy.arduino.path;
+	mcopy.arduino.server = 'http://localhost:9555/';
+	mcopy.arduino.serial = {
+		write : function (cmd, res) {
+			var obj = {
+				url : mcopy.arduino.server + 'cmd?cmd=' + cmd,
+				type: 'GET',
+				dataType : 'json',
+				success : function (data) {
+					if (data.success) {
+						mcopy.arduino.end(data.cmd);
+					}
+				},
+				error : function (err) {
+					console.error(err);
+				}
+			};
+			$.ajax(obj);
+		}
+	};
+	var obj = {
+		url : mcopy.arduino.server + 'connect?path=' + mcopy.arduino.path,
+		type: 'GET',
+		dataType : 'json',
+		success : function (data) {
+			if (data.success) {
+				mcopy.log('Connected to ' +  mcopy.arduino.path + ' via server!')
+				if (callback) callback();
+			}
+		},
+		error : function (err) {
+			console.error(err);
+			if (callback) callback();
+		}
+	};
+	$.ajax(obj);
+};
+
+
+//FOR ARM LINUX
 mcopy.arduino.fakeConnect = function (callback) {
 	mcopy.log('Connecting to fake arduino...');
-	mcopy.state.arduino = '/dev/null';
+	mcopy.state.arduino = mcopy.arduino.path;
 	mcopy.arduino.serial = {
 		write : function (cmd, res) {
 			var t = {
@@ -376,7 +427,9 @@ mcopy.arduino.fakeConnect = function (callback) {
 			}, timeout);
 		}
 	};
+	mcopy.log('Connected to fake arduino! Not real! Doesn\'t exist!');
 	if (callback) callback();
+};
 };
 
 mcopy.arduino.miniConnect = function () {
