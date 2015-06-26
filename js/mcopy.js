@@ -154,13 +154,11 @@ mcopy.init = function () {
 	    	//mcopy.mobile.init();
 	    	mcopy.mobile.toggle();
 	    }
-	    alert('GOT HERE FIRST');
 		mcopy.arduino.init(function (success) {
 			if (!success) {
 				return mcopy.arduino.fakeConnect(mcopy.gui.init);
 			}
 			if (os.platform() === 'linux') {
-				alert('GOT HERE');
 				mcopy.arduino.serverConnect(mcopy.gui.init);
 			} else {
 				mcopy.arduino.connect(mcopy.gui.init);
@@ -433,7 +431,6 @@ mcopy.arduino.fakeConnect = function (callback) {
 	};
 	mcopy.log('Connected to fake arduino! Not real! Doesn\'t exist!');
 	if (callback) callback();
-};
 };
 
 mcopy.arduino.miniConnect = function () {
