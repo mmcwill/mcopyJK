@@ -10,7 +10,7 @@ arduino.cfgInit = function () {
 };
 
 arduino.serial = new serialport('/dev/ttyACM0', {
-  baudrate: mcopy.cfg.arduino.baud,
+  baudrate: arduino.cfg.arduino.baud,
   parser: sp.parsers.readline("\n")
 });
 
