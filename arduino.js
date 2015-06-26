@@ -1,6 +1,7 @@
 var arduino = {},
 	fs = require('fs'),
-	serialport = require('serialport'),
+	sp = require('serialport'),
+	SerialPort = sp.SerialPort,
 	express = require('express'),
 	app = express(),
 	arduino = {};
@@ -8,7 +9,7 @@ var arduino = {},
 arduino.cfgFile = './data/cfg.json';
 arduino.cfg = JSON.parse(fs.readFileSync(arduino.cfgFile, 'utf8'));
 
-arduino.serial = new serialport('/dev/ttyACM0', {
+arduino.serial = new SerialPort('/dev/ttyACM0', {
   baudrate: arduino.cfg.arduino.baud,
   parser: sp.parsers.readline("\n")
 });
