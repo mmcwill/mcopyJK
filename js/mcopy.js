@@ -154,6 +154,7 @@ mcopy.init = function () {
 	    	//mcopy.mobile.init();
 	    	mcopy.mobile.toggle();
 	    }
+	    alert('GOT HERE FIRST');
 		mcopy.arduino.init(function (success) {
 			if (!success) {
 				return mcopy.arduino.fakeConnect(mcopy.gui.init);
