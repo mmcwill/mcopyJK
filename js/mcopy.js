@@ -42,6 +42,9 @@ mcopy.editor = {};
 
 mcopy.sysInfo = function () {
 	console.log('platform: ' + os.platform() + ' v' + os.release());
+	if (process.versions['node-webkit']) {
+		console.log('node-webkit: ' + process.versions['node-webkit']);
+	}
 	console.log(process.title + ': ' + process.version);
 };
 
@@ -281,7 +284,8 @@ mcopy.arduino.init = function (callback) {
 		devices.pop();
 		for (var i = 0; i < devices.length; i++) {
 			if (devices[i].indexOf('usbserial') !== -1
-				||devices[i].indexOf('usbmodem') !== -1){
+				|| devices[i].indexOf('usbmodem') !== -1
+				|| devices[i].indexOf('ACM')  !== -1){
 				matches.push(devices[i]);
 			}
 		}
