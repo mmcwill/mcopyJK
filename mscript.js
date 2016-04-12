@@ -1,5 +1,5 @@
-var fs = require('fs'),
-	input = process.argv[2];
+var fs,
+	input;
 
 var mscript = {};
 
@@ -357,7 +357,19 @@ mscript.tests = function tests () {
 	console.timeEnd('Tests took');
 };
 
-mscript.init();
+if (!module.parent) {
+	if (typeof process !== 'undefined') {
+		fs = require('fs');
+		input = process.argv[2];
+		mscript.init();
+	} else {
+		//web
+	}
+} else {
+	console.log('module here');
+	fs = require('fs');
+	module.exports = mscript;
+}
 
 /*
 
